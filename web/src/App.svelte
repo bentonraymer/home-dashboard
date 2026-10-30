@@ -1,19 +1,19 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import WifiOff from '@lucide/svelte/icons/wifi-off';
-  import Card from './components/Card.svelte';
-  import Hero from './components/Hero.svelte';
+    import Hero from './components/Hero.svelte';
   import NewsTicker from './components/NewsTicker.svelte';
   import NowPlaying from './components/NowPlaying.svelte';
   import Rotator from './components/Rotator.svelte';
   import Wallpaper from './components/Wallpaper.svelte';
   import { clock, dash } from './lib/store.svelte';
   import type { WidgetId } from './lib/types';
-  import { WIDGETS } from './lib/widgets';
 
   const s = $derived(dash.settings);
-  const column: WidgetId[] = $derived(s?.layout.column ?? ['calendar', 'todos']);
-  const rotator = $derived(s?.layout.rotator ?? []);
+  const left: WidgetId[][] = $derived(s?.layout.left ?? []);
+  const right: WidgetId[][] = $derived(s?.layout.right ?? [['calendar'], ['todos']]);
+  // Offset each rotating slot by a few seconds so they take turns changing.
+  const phase = (column: 'left' | 'right', i: number) => (column === 'left' ? i : left.length + i) * 5;
 
   // A screen can override the shared scale with ?scale=0.8 in its URL.
   const urlScale = Number(new URLSearchParams(location.search).get('scale')) || null;
@@ -59,24 +59,23 @@
   <Wallpaper />
   <div class="scrim" aria-hidden="true"></div>
 
-  <main class="layout" style:transform={shift}>
+  <main class="layout" class:no-right={!right.length} style:transform={shift}>
     <section class="hero-area"><Hero /></section>
-
-    <section class="column">
-      {#each column as id (id)}
-        {@const w = WIDGETS[id]}
-        {#if w.ready(dash)}
-          <div class="col-item">
-            <Card title={w.title} icon={w.icon} accent={w.accent}><w.component /></Card>
-          </div>
-        {/if}
-      {/each}
-    </section>
 
     <section class="lower">
       {#if s?.layout.showNowPlaying ?? true}<NowPlaying />{/if}
-      <Rotator views={rotator} />
+      {#each left as group, i (group.join())}
+        <div class="slot-wrap"><Rotator views={group} phase={phase('left', i)} /></div>
+      {/each}
     </section>
+
+    {#if right.length}
+      <section class="column">
+        {#each right as group, i (group.join())}
+          <div class="slot-wrap"><Rotator views={group} phase={phase('right', i)} /></div>
+        {/each}
+      </section>
+    {/if}
 
     <footer class="footer">
       {#if s?.layout.showNews ?? true}<NewsTicker />{:else}<span class="spacer"></span>{/if}
@@ -166,11 +165,15 @@
     gap: 1.3rem;
     min-height: 0;
   }
-  .col-item {
+  .slot-wrap {
     display: flex;
     flex-direction: column;
     min-height: 0;
     flex: 0 1 auto;
+  }
+  .layout.no-right {
+    grid-template-columns: minmax(0, 1fr) 0;
+    column-gap: 0;
   }
   .lower {
     grid-area: lower;
@@ -180,6 +183,7 @@
     gap: 1.3rem;
     max-width: 40rem;
     min-height: 0;
+    max-height: 100%;
   }
   .footer {
     grid-area: footer;
@@ -231,7 +235,7 @@
     .column {
       flex-direction: row;
     }
-    .col-item {
+    .column .slot-wrap {
       flex: 1 1 0;
       min-width: 0;
     }

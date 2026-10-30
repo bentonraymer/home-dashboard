@@ -5,12 +5,13 @@
   import { WIDGETS } from '../lib/widgets';
   import Card from './Card.svelte';
 
-  let { views }: { views: WidgetId[] } = $props();
+  /** `phase` (seconds) staggers slots so they don't all flip at the same moment. */
+  let { views, phase = 0 }: { views: WidgetId[]; phase?: number } = $props();
 
   const ready = $derived(views.filter((id) => WIDGETS[id].ready(dash)));
   const intervalSec = $derived(dash.settings?.layout.rotatorIntervalSec ?? 20);
   // Derived from wall-clock time so every screen shows the same view at once.
-  const index = $derived(ready.length ? Math.floor(clock.now / 1000 / intervalSec) % ready.length : 0);
+  const index = $derived(ready.length ? Math.floor((clock.now / 1000 + phase) / intervalSec) % ready.length : 0);
   const current = $derived(ready[index]);
 </script>
 
@@ -18,7 +19,7 @@
   <div class="stack">
     {#key current}
       {@const w = WIDGETS[current]}
-      <div class="slot" transition:fade={{ duration: 800 }}>
+      <div class="slot" transition:fade={{ duration: ready.length > 1 ? 800 : 0 }}>
         <Card title={w.title} icon={w.icon} accent={w.accent}>
           {#snippet aside()}
             {#if ready.length > 1}
@@ -37,11 +38,15 @@
 <style>
   .stack {
     display: grid;
-    align-items: end;
+    grid-template: minmax(0, auto) / minmax(0, 1fr);
+    min-height: 0;
   }
   .slot {
     grid-area: 1 / 1;
     min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
   .dots {
     display: inline-flex;

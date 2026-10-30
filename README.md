@@ -10,6 +10,7 @@ An ambient, Apple TV–style dashboard for a TV, wall tablet or spare monitor. F
 - **Sports**: live scores, last result and next game for your teams (NFL, NBA, MLB, NHL, MLS, Premier League, college and more)
 - **Countdowns**: trips, birthdays, holidays (yearly ones roll over)
 - **Wallpapers**: a new Unsplash photo every few minutes, with built-in photos as a fallback; text contrast adjusts to each photo
+- **Your layout**: put any card in the left or right column, and group several cards into one slot to have them take turns
 - **TV-friendly**: one lightweight page, live updates over a single connection, a low-power mode for slow TV sticks, night dimming and burn-in protection
 
 Layout and preferences are set from a PIN-protected `/settings` page. API keys stay in `.env` on the server and never reach the browser.

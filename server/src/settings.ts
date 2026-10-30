@@ -40,8 +40,9 @@ export const DEFAULT_SETTINGS = {
   units: 'imperial' as 'imperial' | 'metric',
   clock: { use24h: false, showSeconds: false },
   layout: {
-    column: ['calendar', 'todos'] as WidgetId[],
-    rotator: ['hourly', 'daily', 'air', 'countdowns', 'sports'] as WidgetId[],
+    // Each column is a list of slots; a slot with several cards rotates between them.
+    left: [['hourly', 'daily', 'air', 'countdowns', 'sports']] as WidgetId[][],
+    right: [['calendar'], ['todos']] as WidgetId[][],
     rotatorIntervalSec: 20,
     showNowPlaying: true,
     showNews: true,
@@ -93,8 +94,16 @@ function clamp(n: number, min: number, max: number) {
 
 function normalize(s: Settings): Settings {
   const known = (ids: WidgetId[]) => ids.filter((id) => (WIDGETS as readonly string[]).includes(id));
-  s.layout.column = [...new Set(known(s.layout.column))];
-  s.layout.rotator = [...new Set(known(s.layout.rotator))].filter((id) => !s.layout.column.includes(id));
+  // Every card may appear in at most one slot; drop unknown ids and empty slots.
+  const seen = new Set<string>();
+  const slots = (groups: unknown) =>
+    (Array.isArray(groups) ? groups : [])
+      .map((group) =>
+        known(Array.isArray(group) ? group : []).filter((id) => !seen.has(id) && seen.add(id)),
+      )
+      .filter((group) => group.length);
+  s.layout.left = slots(s.layout.left);
+  s.layout.right = slots(s.layout.right);
   s.layout.rotatorIntervalSec = clamp(s.layout.rotatorIntervalSec, 5, 600);
   s.wallpaper.intervalMin = clamp(s.wallpaper.intervalMin, 1, 240);
   s.wallpaper.topics = s.wallpaper.topics.map(String).map((t) => t.trim()).filter(Boolean);
@@ -110,10 +119,20 @@ function normalize(s: Settings): Settings {
   return s;
 }
 
+/** Settings saved before left/right slots had one fixed column and one rotator. */
+function migrate(raw: Record<string, any>) {
+  const layout = raw?.layout;
+  if (layout && !layout.left && !layout.right && (layout.column || layout.rotator)) {
+    layout.right = (layout.column ?? []).map((id: string) => [id]);
+    layout.left = layout.rotator?.length ? [layout.rotator] : [];
+  }
+  return raw;
+}
+
 export function loadSettings() {
   try {
     if (fs.existsSync(file)) {
-      current = normalize(merge(structuredClone(DEFAULT_SETTINGS), JSON.parse(fs.readFileSync(file, 'utf8'))));
+      current = normalize(merge(structuredClone(DEFAULT_SETTINGS), migrate(JSON.parse(fs.readFileSync(file, 'utf8')))));
     }
   } catch (err) {
     log.error(`Could not read ${file}, using defaults: ${errorMessage(err)}`);

@@ -67,32 +67,44 @@
     query = '';
   }
 
-  // ---- Layout
-  type Zone = 'column' | 'rotator' | 'hidden';
-  const zoneOf = (id: WidgetId): Zone => (s!.layout.column.includes(id) ? 'column' : s!.layout.rotator.includes(id) ? 'rotator' : 'hidden');
-  const ordered = $derived(
-    s ? [...s.layout.column, ...s.layout.rotator, ...(Object.keys(WIDGETS) as WidgetId[]).filter((id) => zoneOf(id) === 'hidden')] : [],
-  );
-  function setZone(id: WidgetId, zone: Zone) {
-    if (!s) return;
-    s.layout.column = s.layout.column.filter((x) => x !== id);
-    s.layout.rotator = s.layout.rotator.filter((x) => x !== id);
-    if (zone !== 'hidden') s.layout[zone].push(id);
+  // ---- Layout: two columns of slots; a slot with several cards rotates between them.
+  type Column = 'left' | 'right';
+  const ALL = Object.keys(WIDGETS) as WidgetId[];
+  const COLUMNS: { key: Column; label: string; hint: string }[] = [
+    { key: 'left', label: 'Left column', hint: 'Under the clock, above the headlines' },
+    { key: 'right', label: 'Right column', hint: 'Stacked from the top' },
+  ];
+  const unused = $derived(s ? ALL.filter((id) => !s.layout.left.flat().includes(id) && !s.layout.right.flat().includes(id)) : []);
+
+  function addSlot(col: Column, id: WidgetId) {
+    s?.layout[col].push([id]);
   }
-  function move(id: WidgetId, dir: -1 | 1) {
-    const zone = zoneOf(id);
-    if (!s || zone === 'hidden') return;
-    const list = s.layout[zone];
-    const i = list.indexOf(id);
+  function addToSlot(col: Column, i: number, id: WidgetId) {
+    s?.layout[col][i].push(id);
+  }
+  function removeCard(col: Column, i: number, id: WidgetId) {
+    if (!s) return;
+    const group = s.layout[col][i].filter((x) => x !== id);
+    if (group.length) s.layout[col][i] = group;
+    else s.layout[col].splice(i, 1);
+  }
+  function moveSlot(col: Column, i: number, dir: -1 | 1) {
+    if (!s) return;
+    const list = s.layout[col];
     const j = i + dir;
     if (j < 0 || j >= list.length) return;
     [list[i], list[j]] = [list[j], list[i]];
   }
-  const zoneOptions: { value: Zone; label: string }[] = [
-    { value: 'column', label: 'Column' },
-    { value: 'rotator', label: 'Rotating' },
-    { value: 'hidden', label: 'Off' },
-  ];
+  function switchColumn(col: Column, i: number) {
+    if (!s) return;
+    const [group] = s.layout[col].splice(i, 1);
+    s.layout[col === 'left' ? 'right' : 'left'].push(group);
+  }
+  function pickCard(e: Event & { currentTarget: HTMLSelectElement }, apply: (id: WidgetId) => void) {
+    const id = e.currentTarget.value as WidgetId;
+    e.currentTarget.value = '';
+    if (id) apply(id);
+  }
 
   // ---- Wallpaper topics
   let topic = $state('');
@@ -211,20 +223,44 @@
       <Toggle label="Show seconds" bind:checked={s.clock.showSeconds} />
     </Section>
 
-    <Section title="Layout" hint="Column cards stay on screen on the right. Rotating cards take turns in the lower-left slot; ones with nothing to show are skipped.">
-      {#each ordered as id (id)}
-        {@const zone = zoneOf(id)}
-        <div class="row">
-          <span class="widget"><span class="swatch" style:background={WIDGETS[id].accent}></span>{WIDGETS[id].title}</span>
-          <span class="controls">
-            {#if zone !== 'hidden'}
-              <button class="icon-btn" onclick={() => move(id, -1)} title="Move up"><ChevronUp size="1rem" /></button>
-              <button class="icon-btn" onclick={() => move(id, 1)} title="Move down"><ChevronDown size="1rem" /></button>
-            {/if}
-            <Segmented options={zoneOptions} bind:value={() => zone, (z) => setZone(id, z)} />
-          </span>
+    <Section title="Layout" hint="Put several cards in one slot to have that slot rotate between them. Cards with nothing to show are skipped.">
+      {#each COLUMNS as col (col.key)}
+        <div class="col-block">
+          <div class="col-head"><b>{col.label}</b><span>{col.hint}</span></div>
+          {#each s.layout[col.key] as group, i (group.join())}
+            <div class="slotbox">
+              <div class="slot-head">
+                <span class="slot-title">Slot {i + 1}{#if group.length > 1}<span class="badge">Rotates</span>{/if}</span>
+                <span class="controls">
+                  <button class="icon-btn" onclick={() => moveSlot(col.key, i, -1)} disabled={i === 0} title="Move slot up"><ChevronUp size="1rem" /></button>
+                  <button class="icon-btn" onclick={() => moveSlot(col.key, i, 1)} disabled={i === s.layout[col.key].length - 1} title="Move slot down"><ChevronDown size="1rem" /></button>
+                  <button class="btn ghost small-btn" onclick={() => switchColumn(col.key, i)}>Move {col.key === 'left' ? 'right' : 'left'}</button>
+                </span>
+              </div>
+              <div class="chips">
+                {#each group as id (id)}
+                  <span class="chip"><span class="swatch" style:background={WIDGETS[id].accent}></span>{WIDGETS[id].title}<button onclick={() => removeCard(col.key, i, id)} title="Remove from slot"><X size="0.8rem" /></button></span>
+                {/each}
+                {#if unused.length}
+                  <select class="chip-select" onchange={(e) => pickCard(e, (id) => addToSlot(col.key, i, id))}>
+                    <option value="">+ Add to rotation</option>
+                    {#each unused as id (id)}<option value={id}>{WIDGETS[id].title}</option>{/each}
+                  </select>
+                {/if}
+              </div>
+            </div>
+          {:else}
+            <p class="muted empty-col">Nothing here yet.</p>
+          {/each}
+          {#if unused.length}
+            <select class="new-slot" onchange={(e) => pickCard(e, (id) => addSlot(col.key, id))}>
+              <option value="">+ New slot with…</option>
+              {#each unused as id (id)}<option value={id}>{WIDGETS[id].title}</option>{/each}
+            </select>
+          {/if}
         </div>
       {/each}
+      <div class="row"><span>Hidden</span><span class="value">{unused.length ? unused.map((id) => WIDGETS[id].title).join(', ') : 'None'}</span></div>
       <div class="row">
         <span>Rotate every</span>
         <span><input class="num-input" type="number" min="5" max="600" bind:value={s.layout.rotatorIntervalSec} /> sec</span>
@@ -511,10 +547,6 @@
     background: rgba(118, 118, 128, 0.24);
     cursor: pointer;
   }
-  .chips {
-    justify-content: flex-start;
-    gap: 0.5rem;
-  }
   .chip {
     display: inline-flex;
     align-items: center;
@@ -540,6 +572,85 @@
     width: 8rem;
     font-size: 0.9rem;
     outline: none;
+  }
+  .col-block {
+    padding: 0.8rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .col-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+  .col-head span {
+    font-size: 0.8rem;
+    color: var(--text-3);
+  }
+  .slotbox {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.7rem;
+  }
+  .slot-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  .slot-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-2);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 1rem;
+    background: rgba(10, 132, 255, 0.25);
+    color: #9ccaff;
+  }
+  .small-btn {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+  }
+  .icon-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .chip .swatch {
+    margin-right: 0.15rem;
+  }
+  .chip-select,
+  .new-slot {
+    background: none;
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    border-radius: 1rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.85rem;
+    color: var(--text-2);
+    cursor: pointer;
+  }
+  .new-slot {
+    align-self: flex-start;
+  }
+  .row.chips {
+    justify-content: flex-start;
+  }
+  .empty-col {
+    margin: 0;
+    font-size: 0.85rem;
   }
   .calendar {
     padding: 0.7rem 0;

@@ -4,7 +4,7 @@ export interface Settings {
   location: { name: string; latitude: number | null; longitude: number | null };
   units: 'imperial' | 'metric';
   clock: { use24h: boolean; showSeconds: boolean };
-  layout: { column: WidgetId[]; rotator: WidgetId[]; rotatorIntervalSec: number; showNowPlaying: boolean; showNews: boolean };
+  layout: { left: WidgetId[][]; right: WidgetId[][]; rotatorIntervalSec: number; showNowPlaying: boolean; showNews: boolean };
   wallpaper: { intervalMin: number; topics: string[] };
   calendar: { daysAhead: number; maxEvents: number };
   todos: { filter: string; maxTasks: number };
