@@ -1,5 +1,5 @@
 import ical, { type VEvent } from 'node-ical';
-import { config, type CalendarSource } from '../config.js';
+import { getCalendars, onCalendarsChange, type CalendarSource } from '../calendars.js';
 import { publish } from '../hub.js';
 import { errorMessage, log } from '../log.js';
 import { startPoller } from '../poller.js';
@@ -31,7 +31,7 @@ function dateOnly(d: Date): string {
 
 async function fetchCalendar(source: CalendarSource, from: Date, to: Date): Promise<CalendarEvent[]> {
   const res = await fetch(source.url, { signal: AbortSignal.timeout(30_000) });
-  if (!res.ok) throw new Error(`${source.name}: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const parsed = ical.sync.parseICS(await res.text());
   const out: CalendarEvent[] = [];
 
@@ -58,9 +58,19 @@ async function fetchCalendar(source: CalendarSource, from: Date, to: Date): Prom
   return out;
 }
 
+export interface SourceStatus {
+  ok: boolean;
+  events: number;
+  error?: string;
+}
+
+/** Per-calendar fetch results, shown next to each calendar in /settings. */
+export const calendarStatus = new Map<string, SourceStatus>();
+
 export function startCalendar() {
   const poller = startPoller('calendar', async () => {
-    if (!config.calendars.length) {
+    const sources = getCalendars();
+    if (!sources.length) {
       publish('calendar', { configured: false, events: [] });
       return 60 * 60_000;
     }
@@ -69,14 +79,18 @@ export function startCalendar() {
     from.setHours(0, 0, 0, 0);
     const to = new Date(from.getTime() + (daysAhead + 1) * 86_400_000);
 
-    const results = await Promise.allSettled(config.calendars.map((c) => fetchCalendar(c, from, to)));
+    const results = await Promise.allSettled(sources.map((c) => fetchCalendar(c, from, to)));
     const events: CalendarEvent[] = [];
     let failed = 0;
+    calendarStatus.clear();
     results.forEach((r, i) => {
-      if (r.status === 'fulfilled') events.push(...r.value);
-      else {
+      if (r.status === 'fulfilled') {
+        events.push(...r.value);
+        calendarStatus.set(sources[i].id, { ok: true, events: r.value.length });
+      } else {
         failed++;
-        log.warn(`[calendar] ${config.calendars[i].name}: ${errorMessage(r.reason)}`);
+        calendarStatus.set(sources[i].id, { ok: false, events: 0, error: errorMessage(r.reason) });
+        log.warn(`[calendar] ${sources[i].name}: ${errorMessage(r.reason)}`);
       }
     });
     if (failed === results.length) throw new Error('every calendar feed failed');
@@ -87,5 +101,6 @@ export function startCalendar() {
     return 10 * 60_000;
   });
   onSettingsChange((s) => s.calendar.daysAhead, poller.refresh);
+  onCalendarsChange(poller.refresh);
   return poller;
 }

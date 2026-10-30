@@ -1,8 +1,8 @@
-import type { Settings } from '../lib/types';
+import type { CalendarSource, Settings } from '../lib/types';
 
 export interface Status {
   pinRequired: boolean;
-  calendars: { name: string; color: string }[];
+  calendarStatus: Record<string, { ok: boolean; events: number; error?: string }>;
   todoist: boolean;
   unsplash: boolean;
   spotify: { configured: boolean; connected: boolean; redirectUri: string };
@@ -15,8 +15,10 @@ export const admin = $state({
   authed: false,
   pinRequired: false,
   settings: null as Settings | null,
+  calendars: [] as CalendarSource[],
   status: null as Status | null,
   saved: '',
+  savedCalendars: '[]',
   saving: false,
   toast: '',
 });
@@ -49,10 +51,12 @@ export async function load() {
   admin.pinRequired = session.pinRequired;
   admin.authed = session.authed;
   if (session.authed) {
-    const data = await api<{ settings: Settings; status: Status }>('/api/admin');
+    const data = await api<{ settings: Settings; calendars: CalendarSource[]; status: Status }>('/api/admin');
     admin.settings = data.settings;
+    admin.calendars = data.calendars;
     admin.status = data.status;
     admin.saved = JSON.stringify(data.settings);
+    admin.savedCalendars = JSON.stringify(data.calendars);
   }
   admin.loading = false;
 }
@@ -61,6 +65,13 @@ export async function save() {
   if (!admin.settings) return;
   admin.saving = true;
   try {
+    if (JSON.stringify(admin.calendars) !== admin.savedCalendars) {
+      const { calendars } = await api<{ calendars: CalendarSource[] }>('/api/admin/calendars', { method: 'PUT', body: admin.calendars });
+      admin.calendars = calendars;
+      admin.savedCalendars = JSON.stringify(calendars);
+      // Pick up each feed's fetch result once the server has tried it.
+      setTimeout(refreshStatus, 4000);
+    }
     const { settings } = await api<{ settings: Settings }>('/api/admin/settings', { method: 'PUT', body: admin.settings });
     admin.settings = settings;
     admin.saved = JSON.stringify(settings);
@@ -72,6 +83,12 @@ export async function save() {
   }
 }
 
+export async function refreshStatus() {
+  const data = await api<{ status: Status }>('/api/admin').catch(() => null);
+  if (data) admin.status = data.status;
+}
+
 export function discard() {
   admin.settings = JSON.parse(admin.saved);
+  admin.calendars = JSON.parse(admin.savedCalendars);
 }

@@ -9,13 +9,14 @@
   import type { WidgetId } from '../lib/types';
   import { WIDGETS } from '../lib/widgets';
   import { admin, api, AuthError, discard, load, save, toast } from './admin.svelte';
+  import ColorPicker from './ColorPicker.svelte';
   import Section from './Section.svelte';
   import Segmented from './Segmented.svelte';
   import Toggle from './Toggle.svelte';
 
   const s = $derived(admin.settings);
   const status = $derived(admin.status);
-  const dirty = $derived(!!s && JSON.stringify(s) !== admin.saved);
+  const dirty = $derived(!!s && (JSON.stringify(s) !== admin.saved || JSON.stringify(admin.calendars) !== admin.savedCalendars));
 
   let pin = $state('');
   let pinError = $state('');
@@ -118,6 +119,22 @@
     const t = teams.find((x) => x.id === teamId);
     if (!s || !t || s.sports.teams.some((x) => x.league === t.league && x.id === t.id)) return;
     s.sports.teams.push(t);
+  }
+
+  // ---- Calendars
+  const CAL_COLORS = ['#0a84ff', '#ff9f0a', '#30d158', '#bf5af2', '#ff375f', '#64d2ff', '#ffd60a', '#ac8e68'];
+  function addCalendar() {
+    admin.calendars.push({
+      id: crypto.randomUUID?.() ?? String(Date.now()),
+      name: '',
+      color: CAL_COLORS[admin.calendars.length % CAL_COLORS.length],
+      url: '',
+    });
+  }
+  function calendarState(id: string) {
+    const st = status?.calendarStatus[id];
+    if (!st) return null;
+    return st.ok ? { ok: true, text: `${st.events} upcoming event${st.events === 1 ? '' : 's'}` } : { ok: false, text: `Couldn't load: ${st.error}` };
   }
 
   // ---- Countdowns
@@ -230,12 +247,20 @@
       <div class="row"><span>Skip to the next photo</span><button class="btn ghost" onclick={nextWallpaper}>Next photo</button></div>
     </Section>
 
-    <Section title="Calendar" hint="Calendars come from CALENDAR_URLS in your .env file.">
-      {#each status.calendars as c (c.name)}
-        <div class="row"><span class="widget"><span class="swatch" style:background={c.color}></span>{c.name}</span></div>
-      {:else}
-        <div class="row muted">No calendars configured</div>
+    <Section title="Calendar" hint={'Use any iCal (.ics) link. For Google Calendar: Settings → your calendar → Integrate calendar → "Secret address in iCal format". Links are stored on the server and never sent to the screens.'}>
+      {#each admin.calendars as c, i (c.id)}
+        {@const st = calendarState(c.id)}
+        <div class="calendar">
+          <div class="cal-top">
+            <ColorPicker bind:value={c.color} />
+            <input class="grow text" bind:value={c.name} placeholder="Name, e.g. Family" />
+            <button class="icon-btn" onclick={() => admin.calendars.splice(i, 1)} title="Remove calendar"><X size="1rem" /></button>
+          </div>
+          <input class="text url" bind:value={c.url} placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" spellcheck="false" />
+          {#if st}<div class="cal-status" class:bad={!st.ok}>{st.text}</div>{/if}
+        </div>
       {/each}
+      <div class="row"><button class="btn ghost" onclick={addCalendar}><Plus size="1rem" /> Add calendar</button></div>
       <div class="row"><span>Days ahead</span><input class="num-input" type="number" min="1" max="60" bind:value={s.calendar.daysAhead} /></div>
       <div class="row"><span>Max events</span><input class="num-input" type="number" min="1" max="50" bind:value={s.calendar.maxEvents} /></div>
     </Section>
@@ -293,7 +318,14 @@
       <div class="row"><button class="btn ghost" onclick={addCountdown}><Plus size="1rem" /> Add countdown</button></div>
     </Section>
 
-    <Section title="Display" hint="Low-power mode drops the glass blur and photo zoom for slow TV sticks. Burn-in protection shifts the layout a few pixels every few minutes.">
+    <Section title="Display" hint="Text size applies to every screen; add ?scale=0.7 to one screen's address to size it on its own. Low-power mode drops the glass blur and photo zoom for slow TV sticks. Burn-in protection shifts the layout a few pixels every few minutes.">
+      <div class="row">
+        <span>Text &amp; card size</span>
+        <span class="controls">
+          <input type="range" min="0.5" max="1.4" step="0.05" bind:value={s.display.scale} />
+          <span class="num pct">{Math.round(s.display.scale * 100)}%</span>
+        </span>
+      </div>
       <Toggle label="Low-power mode" bind:checked={s.display.lowPower} />
       <Toggle label="Slow photo zoom" bind:checked={s.display.kenBurns} />
       <Toggle label="Burn-in protection" bind:checked={s.display.burnInShift} />
@@ -508,6 +540,34 @@
     width: 8rem;
     font-size: 0.9rem;
     outline: none;
+  }
+  .calendar {
+    padding: 0.7rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .cal-top {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .url {
+    width: 100%;
+    font-size: 0.85rem;
+    color: var(--text-2);
+  }
+  .cal-status {
+    font-size: 0.8rem;
+    color: var(--green);
+  }
+  .cal-status.bad {
+    color: var(--red);
+  }
+  .pct {
+    width: 3rem;
+    text-align: right;
+    color: var(--text-2);
   }
   .small {
     font-size: 0.85rem;

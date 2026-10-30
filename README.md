@@ -33,7 +33,7 @@ You need Docker with the Compose plugin.
    docker compose up -d
    ```
 
-4. Open `http://<server-ip>:8080/settings`, enter your PIN, search for your city and arrange the cards. Then point your TV or tablet at `http://<server-ip>:8080/`.
+4. Open `http://<server-ip>:8080/settings`, enter your PIN, search for your city, add your calendars and arrange the cards. Then point your TV or tablet at `http://<server-ip>:8080/`.
 
 To update: `docker compose pull && docker compose up -d`. Open screens reload themselves when a new version starts.
 
@@ -43,21 +43,18 @@ To update: `docker compose pull && docker compose up -d`. Open screens reload th
 | --- | --- |
 | `TZ` | Server time zone, e.g. `America/Denver` |
 | `SETTINGS_PIN` | PIN for `/settings` |
-| `CALENDAR_URLS` | Comma-separated calendar feeds: `url`, `Name\|url` or `Name\|#color\|url` |
 | `TODOIST_TOKEN` | Todoist API token |
 | `UNSPLASH_ACCESS_KEY` | Unsplash app Access Key for rotating wallpapers |
 | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | Spotify app credentials for Now Playing |
 | `SPOTIFY_REDIRECT_URI` | Optional; defaults to `http://127.0.0.1:8080/auth/spotify/callback` |
 
-### Google Calendar
+### Calendars
 
-In Google Calendar on the web: **Settings → (pick a calendar) → Integrate calendar → Secret address in iCal format**. Copy that URL into `CALENDAR_URLS`, e.g.
+Add calendars in `/settings` → **Calendar**: give each a name, pick a color (presets, a color wheel, or type a hex code like `#ff9f0a`) and paste its iCal link. Each calendar shows how many upcoming events it found, or why it couldn't load.
 
-```
-CALENDAR_URLS=Family|#ff9f0a|https://calendar.google.com/calendar/ical/.../basic.ics,Work|https://calendar.google.com/calendar/ical/.../basic.ics
-```
+For Google Calendar, open Google Calendar on the web: **Settings → (pick a calendar) → Integrate calendar → Secret address in iCal format**. Any other `.ics` or `webcal://` feed works the same way (sports schedules, school calendars, holidays). Links are stored in the data volume and are never sent to the screens.
 
-Any other `.ics` or `webcal://` feed works the same way (sports schedules, school calendars, holidays).
+(Older setups that used `CALENDAR_URLS` in `.env` are imported automatically on first start.)
 
 ### Todoist
 
@@ -82,6 +79,7 @@ If you run the dashboard behind an HTTPS reverse proxy, you can set `SPOTIFY_RED
 - **Fire TV / Android TV**: use a kiosk browser (e.g. Fully Kiosk Browser) or Silk, and turn on **Low-power mode** in settings if animations stutter.
 - **iPad / tablet**: open the page in Safari and use *Add to Home Screen* for a full-screen app. Portrait orientation gets its own stacked layout.
 - **Raspberry Pi**: `chromium-browser --kiosk --noerrdialogs --disable-infobars http://<server-ip>:8080/`
+- Too big or too small? Change **Text & card size** under **Display** in settings. To size one screen differently, add `?scale=0.7` (any value from 0.4 to 1.6) to that screen's address.
 - Night dimming and burn-in protection are under **Display** in settings.
 
 ## Development
@@ -96,7 +94,7 @@ npm run check          # type-check server and UI
 npm run build && npm start
 ```
 
-The server (`server/`, Fastify) polls every source on its own schedule, caches the results and pushes changes to screens over Server-Sent Events. The UI (`web/`, Svelte 5 + Vite) is two pages: the dashboard and `/settings`. Settings, the Spotify refresh token and cached wallpapers are stored in `DATA_DIR` (`/data` in Docker).
+The server (`server/`, Fastify) polls every source on its own schedule, caches the results and pushes changes to screens over Server-Sent Events. The UI (`web/`, Svelte 5 + Vite) is two pages: the dashboard and `/settings`. Settings, calendar links, the Spotify refresh token and cached wallpapers are stored in `DATA_DIR` (`/data` in Docker).
 
 Pushing to `main` builds a multi-arch (amd64 + arm64) image and publishes it to `ghcr.io/bentonraymer/home-dashboard` via GitHub Actions; tags like `v1.2.0` also publish versioned images.
 

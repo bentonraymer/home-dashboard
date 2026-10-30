@@ -12,6 +12,7 @@ export interface Settings {
   sports: { teams: { league: string; id: string; name: string; abbr: string; logo: string }[] };
   countdowns: { id: string; name: string; date: string; yearly: boolean; emoji: string }[];
   display: {
+    scale: number;
     lowPower: boolean;
     burnInShift: boolean;
     kenBurns: boolean;
@@ -106,4 +107,11 @@ export interface DashboardState {
   news: { items: { title: string; source: string; published: number }[] } | null;
   sports: { teams: TeamSummary[] } | null;
   wallpaper: Wallpaper | null;
+}
+
+export interface CalendarSource {
+  id: string;
+  name: string;
+  color: string;
+  url: string;
 }

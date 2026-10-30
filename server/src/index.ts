@@ -4,10 +4,11 @@ import path from 'node:path';
 import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import { getCalendars, loadCalendars, saveCalendars } from './calendars.js';
 import { checkPin, cookieSecret, isAuthed, pinRequired, requireAuth, signOut } from './auth.js';
 import { config } from './config.js';
 import { attachClient, publish, snapshot } from './hub.js';
-import { startCalendar } from './integrations/calendar.js';
+import { calendarStatus, startCalendar } from './integrations/calendar.js';
 import { startNews } from './integrations/news.js';
 import { LEAGUES, listTeams, startSports } from './integrations/sports.js';
 import { authorizeUrl, disconnect, handleCallback, spotifyConfigured, spotifyConnected, startSpotify } from './integrations/spotify.js';
@@ -20,6 +21,7 @@ import { DEFAULT_FEEDS, getSettings, loadSettings, saveSettings } from './settin
 
 fs.mkdirSync(config.dataDir, { recursive: true });
 loadSettings();
+loadCalendars();
 
 const app = Fastify({ logger: false, trustProxy: true });
 await app.register(fastifyCookie, { secret: cookieSecret() });
@@ -51,7 +53,7 @@ app.post('/api/logout', async (req, reply) => {
 function status() {
   return {
     pinRequired: pinRequired(),
-    calendars: config.calendars.map((c) => ({ name: c.name, color: c.color })),
+    calendarStatus: Object.fromEntries(calendarStatus),
     todoist: !!config.todoistToken,
     unsplash: !!config.unsplashKey,
     spotify: { configured: spotifyConfigured(), connected: spotifyConnected(), redirectUri: config.spotify.redirectUri },
@@ -63,7 +65,8 @@ function status() {
 app.register(async (admin) => {
   admin.addHook('preHandler', requireAuth);
 
-  admin.get('/api/admin', async () => ({ settings: getSettings(), status: status() }));
+  admin.get('/api/admin', async () => ({ settings: getSettings(), calendars: getCalendars(), status: status() }));
+  admin.put('/api/admin/calendars', async (req) => ({ calendars: saveCalendars(req.body) }));
   admin.put('/api/admin/settings', async (req) => {
     const settings = saveSettings(req.body);
     publish('settings', settings);
@@ -179,7 +182,7 @@ log.info(`Home Dashboard listening on http://${config.host}:${config.port}`);
 const configured = Object.entries(status())
   .filter(([k]) => ['todoist', 'unsplash'].includes(k))
   .map(([k, v]) => `${k}=${v ? 'on' : 'off'}`);
-log.info(`Calendars: ${config.calendars.length}, ${configured.join(', ')}, spotify=${spotifyConfigured() ? (spotifyConnected() ? 'connected' : 'not connected') : 'off'}, PIN ${pinRequired() ? 'set' : 'NOT set'}`);
+log.info(`Calendars: ${getCalendars().length}, ${configured.join(', ')}, spotify=${spotifyConfigured() ? (spotifyConnected() ? 'connected' : 'not connected') : 'off'}, PIN ${pinRequired() ? 'set' : 'NOT set'}`);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {

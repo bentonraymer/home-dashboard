@@ -15,6 +15,13 @@
   const column: WidgetId[] = $derived(s?.layout.column ?? ['calendar', 'todos']);
   const rotator = $derived(s?.layout.rotator ?? []);
 
+  // A screen can override the shared scale with ?scale=0.8 in its URL.
+  const urlScale = Number(new URLSearchParams(location.search).get('scale')) || null;
+  const scale = $derived(urlScale ?? s?.display.scale ?? 0.85);
+  $effect(() => {
+    document.documentElement.style.setProperty('--ui-scale', String(scale));
+  });
+
   const minutes = (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number);
     return h * 60 + (m || 0);
@@ -87,13 +94,13 @@
 
 <style>
   :global(html.dashboard) {
-    font-size: calc(100vmin / 54);
+    font-size: calc(100vmin / 54 * var(--ui-scale, 0.85));
     overflow: hidden;
     cursor: none;
   }
   @media (orientation: portrait) {
     :global(html.dashboard) {
-      font-size: calc(100vw / 40);
+      font-size: calc(100vw / 40 * var(--ui-scale, 0.85));
     }
   }
   :global(.glass) {

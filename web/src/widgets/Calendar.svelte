@@ -32,7 +32,7 @@
 </script>
 
 {#if dash.calendar && !dash.calendar.configured}
-  <p class="empty">Add CALENDAR_URLS to your .env to show events.</p>
+  <p class="empty">Add a calendar in Settings to show events.</p>
 {:else if !groups.length}
   <p class="empty">Nothing on the calendar. Enjoy the quiet.</p>
 {:else}

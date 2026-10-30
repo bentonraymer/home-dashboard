@@ -56,6 +56,7 @@ export const DEFAULT_SETTINGS = {
   sports: { teams: [] as SportsTeam[] },
   countdowns: [] as Countdown[],
   display: {
+    scale: 0.85,
     lowPower: false,
     burnInShift: true,
     kenBurns: true,
@@ -103,6 +104,7 @@ function normalize(s: Settings): Settings {
   s.news.intervalSec = clamp(s.news.intervalSec, 4, 120);
   s.news.feeds = s.news.feeds.filter((f) => f && typeof f.url === 'string' && /^https?:\/\//.test(f.url));
   s.display.nightDim.level = clamp(s.display.nightDim.level, 0, 0.95);
+  s.display.scale = clamp(s.display.scale, 0.4, 1.6);
   s.countdowns = s.countdowns.filter((c) => c && typeof c.name === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.date));
   s.sports.teams = s.sports.teams.filter((t) => t && typeof t.league === 'string' && typeof t.id === 'string');
   return s;
