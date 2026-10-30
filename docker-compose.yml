@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    image: ghcr.io/bentonraymer/home-dashboard:latest
+    container_name: home-dashboard
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file: .env
+    volumes:
+      # Settings, the Spotify sign-in and cached wallpapers live here.
+      - ./data:/data

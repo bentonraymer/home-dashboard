@@ -1,0 +1,45 @@
+:root {
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', 'Segoe UI', Roboto, sans-serif;
+  --text: #ffffff;
+  --text-2: rgba(255, 255, 255, 0.72);
+  --text-3: rgba(255, 255, 255, 0.5);
+  --hairline: rgba(255, 255, 255, 0.12);
+  --glass: rgba(28, 28, 34, 0.36);
+  --glass-solid: rgba(18, 18, 22, 0.7);
+  --red: #ff453a;
+  --orange: #ff9f0a;
+  --yellow: #ffd60a;
+  --green: #30d158;
+  --blue: #0a84ff;
+  --teal: #64d2ff;
+  --radius: 1.5rem;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'tnum' 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
