@@ -4,10 +4,17 @@
   import { deg, formatHour } from '../lib/format';
 
   const use24h = $derived(dash.settings?.clock.use24h ?? false);
-  const hours = $derived((dash.weather?.hourly ?? []).slice(0, 12));
+  // Two rows of as many hours as fit across the card.
+  const MIN_COLUMN_REM = 3.4;
+  let width = $state(0);
+  const perRow = $derived.by(() => {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    return Math.max(3, Math.floor((width + 0.3 * rem) / ((MIN_COLUMN_REM + 0.3) * rem)));
+  });
+  const hours = $derived((dash.weather?.hourly ?? []).slice(0, perRow * 2));
 </script>
 
-<div class="row">
+<div class="row" bind:clientWidth={width} style:grid-template-columns="repeat({perRow}, 1fr)">
   {#each hours as h, i (h.time)}
     <div class="hour">
       <span class="t">{i === 0 ? 'Now' : formatHour(h.time, use24h)}</span>
@@ -19,15 +26,11 @@
 </div>
 
 <style>
-  /* As many hours as fit the card's width: extra ones wrap onto zero-height rows and are clipped. */
   .row {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(3.4rem, 1fr));
-    grid-auto-rows: 0;
-    grid-template-rows: auto;
+    grid-template-rows: auto auto;
+    align-content: space-evenly;
     column-gap: 0.3rem;
-    row-gap: 0;
-    overflow: hidden;
   }
   .hour {
     display: flex;

@@ -36,14 +36,18 @@
 </div>
 
 <style>
+  /* Everything here is sized in --u, which shrinks below 1rem when the space between the
+     columns gets too narrow (large text size, small screens), so nothing wraps or overflows. */
   .hero {
+    --u: min(1rem, 3.1cqi);
+    font-size: var(--u);
     text-align: center;
     font-family: var(--hero-font);
-    text-shadow: 0 0.1rem 1.2rem rgba(0, 0, 0, 0.35);
+    text-shadow: 0 calc(0.1 * var(--u)) calc(1.2 * var(--u)) rgba(0, 0, 0, 0.35);
   }
   .time {
     font-family: var(--clock-font);
-    font-size: var(--clock-size);
+    font-size: calc(var(--clock-size) * var(--u));
     font-weight: var(--clock-weight);
     font-style: var(--clock-style);
     line-height: 0.9;
@@ -71,8 +75,9 @@
     color: var(--text-2);
   }
   .date {
-    margin-top: 0.9rem;
-    font-size: var(--date-size);
+    margin-top: calc(0.9 * var(--u));
+    font-size: calc(var(--date-size) * var(--u));
+    white-space: nowrap;
     font-weight: var(--date-weight);
     font-style: var(--date-style);
     text-transform: var(--date-case);
@@ -82,34 +87,35 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
-    margin-top: 1.6rem;
+    gap: calc(1 * var(--u));
+    margin-top: calc(1.6 * var(--u));
   }
   .icon {
-    font-size: 3.6rem;
+    font-size: calc(3.6 * var(--u));
     display: inline-flex;
   }
   .temp {
-    font-size: 4.2rem;
+    font-size: calc(4.2 * var(--u));
     font-weight: 300;
     letter-spacing: -0.02em;
   }
   .meta {
-    margin-left: 0.4rem;
+    white-space: nowrap;
+    margin-left: calc(0.4 * var(--u));
     text-align: left;
   }
   .cond {
-    font-size: 1.45rem;
+    font-size: calc(1.45 * var(--u));
     font-weight: 600;
   }
   .sub {
-    font-size: 1.15rem;
+    font-size: calc(1.15 * var(--u));
     color: var(--text-2);
-    margin-top: 0.15rem;
+    margin-top: calc(0.15 * var(--u));
   }
   .hint {
-    margin-top: 1.6rem;
-    font-size: 1.2rem;
+    margin-top: calc(1.6 * var(--u));
+    font-size: calc(1.2 * var(--u));
     color: var(--text-2);
   }
 </style>

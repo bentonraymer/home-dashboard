@@ -19,7 +19,7 @@
   <div class="stack" class:rigid={!WIDGETS[current].shrinks}>
     {#key current}
       {@const w = WIDGETS[current]}
-      <div class="slot" transition:fade={{ duration: ready.length > 1 ? 800 : 0 }}>
+      <div class="slot" class:uniform={w.uniform} transition:fade={{ duration: ready.length > 1 ? 800 : 0 }}>
         <Card title={w.title} icon={w.icon} accent={w.accent}>
           {#snippet aside()}
             {#if ready.length > 1}
@@ -47,6 +47,18 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+  }
+  /* Fixed-height cards: the widget inside stretches to fill the card body. */
+  .slot.uniform > :global(.card) {
+    height: var(--uniform-card-h);
+  }
+  .slot.uniform > :global(.card > .body) {
+    display: flex;
+    flex-direction: column;
+  }
+  .slot.uniform > :global(.card > .body > *) {
+    flex: 1 1 auto;
+    min-height: 0;
   }
   .dots {
     display: inline-flex;

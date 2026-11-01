@@ -70,7 +70,7 @@
   }
   .time {
     font-family: var(--clock-font);
-    font-size: calc(var(--clock-size) * 1.35);
+    font-size: min(calc(var(--clock-size) * 1.35rem), 27vw);
     font-weight: var(--clock-weight);
     font-style: var(--clock-style);
     line-height: 0.9;
@@ -90,7 +90,7 @@
   }
   .date {
     margin-top: 1.4rem;
-    font-size: calc(var(--date-size) * 0.95);
+    font-size: calc(var(--date-size) * 0.95rem);
     font-weight: 400;
     font-style: var(--date-style);
     text-transform: var(--date-case);

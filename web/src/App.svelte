@@ -8,6 +8,7 @@
   import NowPlaying from './components/NowPlaying.svelte';
   import Rotator from './components/Rotator.svelte';
   import Wallpaper from './components/Wallpaper.svelte';
+  import { fitChildren } from './lib/fitChildren';
   import { clock, dash } from './lib/store.svelte';
   import type { WidgetId } from './lib/types';
 
@@ -70,7 +71,7 @@
 
       {#each [{ key: 'left', slots: left }, { key: 'right', slots: right }] as const as col (col.key)}
         {#if col.slots.length}
-          <section class="column {col.key}">
+          <section class="column {col.key}" use:fitChildren>
             {#each col.slots as group, i (group.join())}
               <div class="slot-wrap"><Rotator views={group} phase={phase(col.key, i)} /></div>
             {/each}
@@ -149,11 +150,13 @@
     transition: background 2.5s;
   }
   .layout {
+    --col-w: min(31rem, 30vw);
     position: fixed;
     inset: 0;
     display: grid;
     /* Equal side columns keep the clock centred on screen even when one of them is empty. */
-    grid-template-columns: 31rem minmax(0, 1fr) 31rem;
+    /* Side columns grow with the text size but never take more than ~30% of the screen each. */
+    grid-template-columns: var(--col-w) minmax(0, 1fr) var(--col-w);
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
       'left hero right'
@@ -168,6 +171,7 @@
   }
   .hero-area {
     grid-area: hero;
+    container-type: inline-size;
     padding: 0 2.5rem;
   }
   .column {
@@ -186,8 +190,9 @@
     min-height: 0;
     flex: 0 1 auto;
   }
-  /* The last slot may still shrink, so an overfull column is cut off rather than running into the footer. */
-  .slot-wrap:not(:last-child):has(> :global(.rigid)) {
+  /* Lists may lose rows when a column is crowded; charts and maps keep their full height, and
+     cards that still don't fit are hidden by fitChildren. */
+  .slot-wrap:has(> :global(.rigid)) {
     flex-shrink: 0;
   }
   .center {
@@ -253,9 +258,10 @@
     }
     .column {
       flex-direction: row;
+      flex-wrap: wrap;
     }
     .column .slot-wrap {
-      flex: 1 1 0;
+      flex: 1 1 18rem;
       min-width: 0;
     }
     .footer {

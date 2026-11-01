@@ -28,9 +28,19 @@
     lon,
     radiusKm,
     credit,
+    fill = false,
     under,
     over,
-  }: { lat: number; lon: number; radiusKm: number; credit: string; under?: Snippet<[MapApi]>; over?: Snippet<[MapApi]> } = $props();
+  }: {
+    lat: number;
+    lon: number;
+    radiusKm: number;
+    credit: string;
+    /** Fill the parent's height instead of keeping a 3:2 shape; the map is cropped to cover it. */
+    fill?: boolean;
+    under?: Snippet<[MapApi]>;
+    over?: Snippet<[MapApi]>;
+  } = $props();
 
   const metersPerPx = (z: number) => (40075016 * Math.cos((lat * Math.PI) / 180)) / (TILE * 2 ** z);
   // Zoom so the whole radius (plus a margin) fits across the map.
@@ -71,10 +81,14 @@
     `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_${layer}/MapServer/tile/${zoom}/${t.y}/${t.x}`;
 
   let width = $state(W);
+  let height = $state(H);
+  // Cover the box, cropping the edges evenly; the centre (your location) stays in the middle.
+  const scale = $derived(fill ? Math.max(width / W, height / H) : width / W);
+  const transform = $derived(`translate(${(width - W * scale) / 2}px, ${fill ? (height - H * scale) / 2 : 0}px) scale(${scale})`);
 </script>
 
-<div class="map" bind:clientWidth={width}>
-  <div class="canvas" style:width="{W}px" style:height="{H}px" style:transform="scale({width / W})">
+<div class="map" class:fill bind:clientWidth={width} bind:clientHeight={height}>
+  <div class="canvas" style:width="{W}px" style:height="{H}px" style:transform={transform}>
     {#each baseTiles as t (`${t.x}/${t.y}`)}
       <img class="tile" src={basemap('Base', t)} alt="" style:left="{t.left}px" style:top="{t.top}px" style:width="{t.size}px" />
     {/each}
@@ -96,6 +110,10 @@
     border-radius: 0.9rem;
     overflow: hidden;
     background: #0e0f12;
+  }
+  .map.fill {
+    aspect-ratio: auto;
+    min-height: 6rem;
   }
   .canvas {
     position: absolute;

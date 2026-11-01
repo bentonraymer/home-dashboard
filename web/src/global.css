@@ -13,6 +13,7 @@
   --blue: #0a84ff;
   --teal: #64d2ff;
   --radius: 1.5rem;
+  --uniform-card-h: 18.5rem;
   --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
   color-scheme: dark;
 }
@@ -48,7 +49,7 @@ textarea {
 :root {
   --clock-font: var(--font);
   --clock-weight: 200;
-  --clock-size: 9.5rem;
+  --clock-size: 9.5;
   --clock-spacing: -0.03em;
   --clock-style: normal;
   --clock-fill: currentColor;
@@ -56,7 +57,7 @@ textarea {
   --clock-shadow: 0 0.1rem 1.2rem rgba(0, 0, 0, 0.35);
   --hero-font: var(--font);
   --date-weight: 500;
-  --date-size: 2rem;
+  --date-size: 2;
   --date-style: normal;
   --date-case: none;
   --date-spacing: -0.01em;
@@ -72,32 +73,32 @@ textarea {
 .cs-serif {
   --clock-font: 'Fraunces Variable', Georgia, serif;
   --clock-weight: 300;
-  --clock-size: 10rem;
+  --clock-size: 10;
   --clock-spacing: -0.02em;
   --hero-font: 'Fraunces Variable', Georgia, serif;
   --date-weight: 400;
-  --date-size: 2.1rem;
+  --date-size: 2.1;
   --date-style: italic;
   --date-spacing: 0;
 }
 .cs-mono {
   --clock-font: 'JetBrains Mono Variable', ui-monospace, monospace;
   --clock-weight: 200;
-  --clock-size: 8.5rem;
+  --clock-size: 8.5;
   --clock-spacing: -0.05em;
   --hero-font: 'JetBrains Mono Variable', ui-monospace, monospace;
   --date-weight: 400;
-  --date-size: 1.45rem;
+  --date-size: 1.45;
   --date-case: uppercase;
   --date-spacing: 0.12em;
 }
 .cs-condensed {
   --clock-font: 'Bebas Neue', 'Arial Narrow', sans-serif;
   --clock-weight: 400;
-  --clock-size: 13rem;
+  --clock-size: 13;
   --clock-spacing: 0.01em;
   --date-weight: 600;
-  --date-size: 1.55rem;
+  --date-size: 1.55;
   --date-case: uppercase;
   --date-spacing: 0.2em;
 }
@@ -110,7 +111,7 @@ textarea {
   --clock-stroke: 0.025em;
   --clock-shadow: none;
   --date-weight: 700;
-  --date-size: 1.55rem;
+  --date-size: 1.55;
   --date-case: uppercase;
   --date-spacing: 0.16em;
 }

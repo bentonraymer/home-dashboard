@@ -49,7 +49,7 @@
     <span>{summary}</span>
     <span class="time num" class:latest={frame === frames.length - 1}>{frameTime}</span>
   </div>
-  <MapView {lat} {lon} {radiusKm} credit="RainViewer · Esri, HERE, Garmin">
+  <MapView {lat} {lon} {radiusKm} fill credit="RainViewer · Esri, HERE, Garmin">
     {#snippet under(map)}
       {@const z = Math.min(map.zoom, RADAR_MAX_ZOOM)}
       {#each frames as f, i (f.path)}
@@ -75,6 +75,9 @@
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
+  }
+  .radar > :global(.map) {
+    flex: 1 1 0;
   }
   .summary {
     display: flex;

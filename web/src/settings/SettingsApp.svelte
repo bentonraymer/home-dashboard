@@ -437,7 +437,7 @@
       </form>
     </Section>
 
-    <Section title="Display" hint="Text size applies to every screen; add ?scale=0.7 to one screen's address to size it on its own. Low-power mode drops the glass blur and photo zoom for slow TV sticks. Burn-in protection shifts the layout a few pixels every few minutes.">
+    <Section title="Display" hint="Text size applies to every screen; add ?scale=0.7 to one screen's address to size it on its own. Cards that no longer fit in a column are left off until there's room. Low-power mode drops the glass blur and photo zoom for slow TV sticks. Burn-in protection shifts the layout a few pixels every few minutes.">
       <div class="row">
         <span>Clock style</span>
         <select bind:value={s.display.clockStyle}>
@@ -539,7 +539,7 @@
   }
   .preview-time {
     font-family: var(--clock-font);
-    font-size: calc(var(--clock-size) * 0.45);
+    font-size: calc(var(--clock-size) * 0.45rem);
     font-weight: var(--clock-weight);
     letter-spacing: var(--clock-spacing);
     line-height: 0.95;
@@ -547,7 +547,7 @@
     -webkit-text-stroke: var(--clock-stroke) var(--text);
   }
   .preview-date {
-    font-size: calc(var(--date-size) * 0.55);
+    font-size: calc(var(--date-size) * 0.55rem);
     font-weight: var(--date-weight);
     font-style: var(--date-style);
     text-transform: var(--date-case);

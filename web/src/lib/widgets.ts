@@ -30,6 +30,8 @@ interface WidgetDef {
   ready: (d: DashboardState) => boolean;
   /** Lists can lose rows when a column is crowded; charts and maps keep their full height. */
   shrinks?: boolean;
+  /** Weather-style cards share one fixed height so a rotating slot doesn't jump around. */
+  uniform?: boolean;
 }
 
 const weatherReady = (d: DashboardState) => !!d.weather?.configured;
@@ -37,11 +39,11 @@ const weatherReady = (d: DashboardState) => !!d.weather?.configured;
 export const WIDGETS: Record<WidgetId, WidgetDef> = {
   calendar: { title: 'Calendar', icon: CalendarDays, accent: '#ff453a', component: Calendar, ready: (d) => !!d.calendar, shrinks: true },
   todos: { title: 'To Do', icon: CircleCheck, accent: '#0a84ff', component: Todos, ready: (d) => !!d.todos, shrinks: true },
-  hourly: { title: 'Hourly Forecast', icon: Clock, accent: '#64d2ff', component: Hourly, ready: weatherReady },
-  daily: { title: '6-Day Forecast', icon: Thermometer, accent: '#ff9f0a', component: Daily, ready: weatherReady },
-  air: { title: 'Conditions', icon: Gauge, accent: '#30d158', component: Air, ready: weatherReady },
+  hourly: { title: 'Hourly Forecast', icon: Clock, accent: '#64d2ff', component: Hourly, ready: weatherReady, uniform: true },
+  daily: { title: '6-Day Forecast', icon: Thermometer, accent: '#ff9f0a', component: Daily, ready: weatherReady, uniform: true },
+  air: { title: 'Conditions', icon: Gauge, accent: '#30d158', component: Air, ready: weatherReady, uniform: true },
   countdowns: { title: 'Countdowns', icon: Hourglass, accent: '#bf5af2', component: Countdowns, ready: (d) => !!d.settings?.countdowns.length, shrinks: true },
-  radar: { title: 'Radar', icon: Radar, accent: '#5ac8fa', component: RadarMap, ready: (d) => !!d.radar?.active },
+  radar: { title: 'Radar', icon: Radar, accent: '#5ac8fa', component: RadarMap, ready: (d) => !!d.radar?.active, uniform: true },
   flights: { title: 'Overhead', icon: Plane, accent: '#ff9f0a', component: Flights, ready: (d) => !!d.flights?.aircraft.length },
   youtube: { title: 'Live on YouTube', icon: Tv, accent: '#ff3b30', component: YouTube, ready: (d) => !!d.youtube?.live.length, shrinks: true },
   sports: { title: 'Scores', icon: Trophy, accent: '#ffd60a', component: Sports, ready: (d) => !!d.sports?.teams.length, shrinks: true },

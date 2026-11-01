@@ -38,6 +38,11 @@
 </div>
 
 <style>
+  .days {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
   .day {
     display: grid;
     grid-template-columns: 4.2rem 4.4rem 2.8rem 1fr 2.8rem;
