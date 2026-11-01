@@ -8,11 +8,12 @@
   const showSeconds = $derived(dash.settings?.clock.showSeconds ?? false);
   const time = $derived(clockParts(clock.now, use24h));
   const date = $derived(new Date(clock.now).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }));
+  const style = $derived(dash.settings?.display.clockStyle ?? 'classic');
   const w = $derived(dash.weather?.configured ? dash.weather : null);
   const today = $derived(w?.daily?.[0]);
 </script>
 
-<div class="hero">
+<div class="hero cs-{style}">
   <div class="time num">
     {time.main}{#if showSeconds}<span class="sec">{time.seconds}</span>{/if}{#if !use24h}<span class="period">{time.period}</span>{/if}
   </div>
@@ -37,13 +38,23 @@
 <style>
   .hero {
     text-align: center;
+    font-family: var(--hero-font);
     text-shadow: 0 0.1rem 1.2rem rgba(0, 0, 0, 0.35);
   }
   .time {
-    font-size: 9.5rem;
-    font-weight: 200;
+    font-family: var(--clock-font);
+    font-size: var(--clock-size);
+    font-weight: var(--clock-weight);
+    font-style: var(--clock-style);
     line-height: 0.9;
-    letter-spacing: -0.03em;
+    letter-spacing: var(--clock-spacing);
+    color: var(--clock-fill);
+    -webkit-text-stroke: var(--clock-stroke) var(--text);
+    text-shadow: var(--clock-shadow);
+  }
+  .sec,
+  .period {
+    -webkit-text-stroke: 0;
   }
   .sec {
     font-size: 0.32em;
@@ -61,9 +72,11 @@
   }
   .date {
     margin-top: 0.9rem;
-    font-size: 2rem;
-    font-weight: 500;
-    letter-spacing: -0.01em;
+    font-size: var(--date-size);
+    font-weight: var(--date-weight);
+    font-style: var(--date-style);
+    text-transform: var(--date-case);
+    letter-spacing: var(--date-spacing);
   }
   .weather {
     display: flex;

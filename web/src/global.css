@@ -43,3 +43,74 @@ textarea {
 .num {
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- Clock styles: the big clock and the date/weather text under it ---- */
+:root {
+  --clock-font: var(--font);
+  --clock-weight: 200;
+  --clock-size: 9.5rem;
+  --clock-spacing: -0.03em;
+  --clock-style: normal;
+  --clock-fill: currentColor;
+  --clock-stroke: 0;
+  --clock-shadow: 0 0.1rem 1.2rem rgba(0, 0, 0, 0.35);
+  --hero-font: var(--font);
+  --date-weight: 500;
+  --date-size: 2rem;
+  --date-style: normal;
+  --date-case: none;
+  --date-spacing: -0.01em;
+}
+.cs-rounded {
+  --clock-font: 'Outfit Variable', var(--font);
+  --clock-weight: 500;
+  --clock-spacing: -0.02em;
+  --hero-font: 'Outfit Variable', var(--font);
+  --date-weight: 400;
+  --date-spacing: 0;
+}
+.cs-serif {
+  --clock-font: 'Fraunces Variable', Georgia, serif;
+  --clock-weight: 300;
+  --clock-size: 10rem;
+  --clock-spacing: -0.02em;
+  --hero-font: 'Fraunces Variable', Georgia, serif;
+  --date-weight: 400;
+  --date-size: 2.1rem;
+  --date-style: italic;
+  --date-spacing: 0;
+}
+.cs-mono {
+  --clock-font: 'JetBrains Mono Variable', ui-monospace, monospace;
+  --clock-weight: 200;
+  --clock-size: 8.5rem;
+  --clock-spacing: -0.05em;
+  --hero-font: 'JetBrains Mono Variable', ui-monospace, monospace;
+  --date-weight: 400;
+  --date-size: 1.45rem;
+  --date-case: uppercase;
+  --date-spacing: 0.12em;
+}
+.cs-condensed {
+  --clock-font: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --clock-weight: 400;
+  --clock-size: 13rem;
+  --clock-spacing: 0.01em;
+  --date-weight: 600;
+  --date-size: 1.55rem;
+  --date-case: uppercase;
+  --date-spacing: 0.2em;
+}
+.cs-outline {
+  /* Poppins' glyphs have no overlapping contours, which would show up as stray lines when outlined. */
+  --clock-font: 'Poppins', var(--font);
+  --clock-weight: 600;
+  --clock-spacing: -0.02em;
+  --clock-fill: transparent;
+  --clock-stroke: 0.025em;
+  --clock-shadow: none;
+  --date-weight: 700;
+  --date-size: 1.55rem;
+  --date-case: uppercase;
+  --date-spacing: 0.16em;
+}

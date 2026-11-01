@@ -8,6 +8,9 @@ An ambient, Apple TV–style dashboard for a TV, wall tablet or spare monitor. F
 - **Now Playing**: your Spotify track with album art; hidden when nothing is playing
 - **Headlines**: a slow crossfading ticker from any RSS feeds
 - **Radar**: an animated precipitation map that only appears when rain or snow is nearby ([RainViewer](https://www.rainviewer.com), no key needed)
+- **Flights overhead**: a live map of aircraft near you, with routes for the closest ones ([ADSB.lol](https://adsb.lol) + [adsbdb](https://www.adsbdb.com), no key needed); hidden when the sky is empty
+- **Live on YouTube**: pick channels and see the ones streaming right now; the card disappears when none are live
+- **Clock styles**: six looks for the clock and the text around it (classic, rounded, serif, mono, condensed, outline)
 - **Night mode**: a black screen with a dim clock for dark rooms, switched by Home Assistant (or anything else) over a simple HTTP call
 - **Sports**: live scores, last result and next game for your teams (NFL, NBA, MLB, NHL, MLS, Premier League, college and more)
 - **Countdowns**: trips, birthdays, holidays (yearly ones roll over)
@@ -109,6 +112,12 @@ Then call `rest_command.dashboard_night` from an automation, for example when th
 
 Add the **Radar** card to a slot under **Layout**. It stays hidden until rain or snow shows up within the distance set under **Radar** in settings (50 mi by default), then shows the last 1.5 hours of radar around you. Put it in a slot with other cards and it simply joins the rotation while there's something to see.
 
+## Flights & YouTube
+
+**Flights overhead** shows aircraft within the distance set under **Flights overhead** in settings (about 16 mi / 25 km by default), using the community ADS-B network at ADSB.lol. Planes glide between updates, the nearest three are labelled, and routes come from adsbdb when the flight is known. Aircraft on the ground are left out.
+
+**Live on YouTube**: add channels under **Live on YouTube** in settings by `@handle`, channel link or channel ID. Every few minutes the server checks which of them are streaming. Only live channels are listed, and the card stays hidden while none are. No API key is needed.
+
 ## Display tips
 
 - **Fire TV / Android TV**: use a kiosk browser (e.g. Fully Kiosk Browser) or Silk, and turn on **Low-power mode** in settings if animations stutter.
@@ -135,4 +144,4 @@ Pushing to `main` builds a multi-arch (amd64 + arm64) image and publishes it to 
 
 ## Credits
 
-Weather from [Open-Meteo](https://open-meteo.com). Radar from [RainViewer](https://www.rainviewer.com) over an [Esri](https://www.esri.com) dark basemap. Scores from ESPN's public site API. Photos from [Unsplash](https://unsplash.com); the built-in fallback photos are Unsplash images selected through [Lorem Picsum](https://picsum.photos), credited on screen. Icons from [Lucide](https://lucide.dev).
+Weather from [Open-Meteo](https://open-meteo.com). Radar from [RainViewer](https://www.rainviewer.com) over an [Esri](https://www.esri.com) dark basemap. Aircraft from [ADSB.lol](https://adsb.lol) (ODbL) and routes from [adsbdb](https://www.adsbdb.com). Clock fonts (Inter, Outfit, Fraunces, JetBrains Mono, Bebas Neue, Poppins) via [Fontsource](https://fontsource.org). Scores from ESPN's public site API. Photos from [Unsplash](https://unsplash.com); the built-in fallback photos are Unsplash images selected through [Lorem Picsum](https://picsum.photos), credited on screen. Icons from [Lucide](https://lucide.dev).

@@ -186,6 +186,10 @@
     min-height: 0;
     flex: 0 1 auto;
   }
+  /* The last slot may still shrink, so an overfull column is cut off rather than running into the footer. */
+  .slot-wrap:not(:last-child):has(> :global(.rigid)) {
+    flex-shrink: 0;
+  }
   .center {
     grid-area: center;
     display: flex;

@@ -1,4 +1,4 @@
-import '@fontsource-variable/inter';
+import './lib/fonts';
 import './global.css';
 import { mount } from 'svelte';
 import App from './App.svelte';

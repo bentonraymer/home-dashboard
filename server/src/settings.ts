@@ -4,7 +4,9 @@ import path from 'node:path';
 import { config } from './config.js';
 import { errorMessage, log } from './log.js';
 
-export const WIDGETS = ['calendar', 'todos', 'hourly', 'daily', 'air', 'countdowns', 'sports', 'radar'] as const;
+export const WIDGETS = ['calendar', 'todos', 'hourly', 'daily', 'air', 'countdowns', 'sports', 'radar', 'flights', 'youtube'] as const;
+export const CLOCK_STYLES = ['classic', 'rounded', 'serif', 'mono', 'condensed', 'outline'] as const;
+export type ClockStyle = (typeof CLOCK_STYLES)[number];
 export type WidgetId = (typeof WIDGETS)[number];
 
 export interface SportsTeam {
@@ -21,6 +23,13 @@ export interface Countdown {
   date: string; // YYYY-MM-DD
   yearly: boolean;
   emoji: string;
+}
+
+export interface YouTubeChannel {
+  id: string; // UC… channel id
+  name: string;
+  handle: string;
+  avatar: string;
 }
 
 export interface Feed {
@@ -41,8 +50,8 @@ export const DEFAULT_SETTINGS = {
   clock: { use24h: false, showSeconds: false },
   layout: {
     // Each column is a list of slots; a slot with several cards rotates between them.
-    left: [['radar'], ['hourly', 'daily', 'air', 'countdowns', 'sports']] as WidgetId[][],
-    right: [['calendar'], ['todos']] as WidgetId[][],
+    left: [['radar'], ['hourly', 'daily', 'air', 'countdowns', 'sports', 'flights']] as WidgetId[][],
+    right: [['calendar'], ['todos'], ['youtube']] as WidgetId[][],
     rotatorIntervalSec: 20,
     showNowPlaying: true,
     showNews: true,
@@ -58,9 +67,14 @@ export const DEFAULT_SETTINGS = {
   countdowns: [] as Countdown[],
   // The radar card only appears when there's precipitation within this distance.
   radar: { radiusKm: 80 },
+  // Aircraft overhead from public ADS-B receivers; the card hides when the sky is empty.
+  flights: { radiusKm: 25 },
+  // Channels to watch; only the ones streaming right now are shown.
+  youtube: { channels: [] as YouTubeChannel[] },
   // The dark view Home Assistant switches to with POST /api/mode.
   night: { brightness: 0.45, showWeather: true, showNextEvent: true },
   display: {
+    clockStyle: 'classic' as ClockStyle,
     scale: 0.85,
     lowPower: false,
     burnInShift: true,
@@ -119,6 +133,9 @@ function normalize(s: Settings): Settings {
   s.display.nightDim.level = clamp(s.display.nightDim.level, 0, 0.95);
   s.display.scale = clamp(s.display.scale, 0.4, 1.6);
   s.radar.radiusKm = clamp(Math.round(s.radar.radiusKm), 10, 400);
+  s.flights.radiusKm = clamp(Math.round(s.flights.radiusKm), 2, 200);
+  s.youtube.channels = s.youtube.channels.filter((c) => c && typeof c.id === 'string' && /^UC[\w-]{22}$/.test(c.id));
+  if (!(CLOCK_STYLES as readonly string[]).includes(s.display.clockStyle)) s.display.clockStyle = 'classic';
   s.night.brightness = clamp(s.night.brightness, 0.1, 1);
   s.countdowns = s.countdowns.filter((c) => c && typeof c.name === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.date));
   s.sports.teams = s.sports.teams.filter((t) => t && typeof t.league === 'string' && typeof t.id === 'string');
@@ -135,6 +152,17 @@ function migrate(raw: Record<string, any>) {
   // Settings from before the radar card existed: give it a slot of its own at the top left.
   if (layout && !raw.radar && Array.isArray(layout.left) && !JSON.stringify(layout).includes('"radar"')) {
     layout.left.unshift(['radar']);
+  }
+  // Before flights and YouTube: YouTube gets its own slot on the right (it hides when nobody is live),
+  // and flights join the left column's biggest rotation.
+  if (layout && !raw.flights && Array.isArray(layout.left) && Array.isArray(layout.right)) {
+    const placed = JSON.stringify(layout);
+    if (!placed.includes('"youtube"')) layout.right.push(['youtube']);
+    if (!placed.includes('"flights"')) {
+      const biggest = layout.left.reduce((a: string[] | undefined, b: string[]) => (!a || b.length > a.length ? b : a), undefined);
+      if (biggest?.length > 1) biggest.push('flights');
+      else layout.left.push(['flights']);
+    }
   }
   return raw;
 }
@@ -170,4 +198,9 @@ export function onSettingsChange(select: (s: Settings) => unknown, fn: () => voi
   events.on('change', (next: Settings, prev: Settings) => {
     if (JSON.stringify(select(next)) !== JSON.stringify(select(prev))) fn();
   });
+}
+
+/** Whether a card is placed anywhere on screen, so sources nobody sees aren't polled. */
+export function inLayout(s: Settings, id: WidgetId) {
+  return [...s.layout.left, ...s.layout.right].some((slot) => slot.includes(id));
 }

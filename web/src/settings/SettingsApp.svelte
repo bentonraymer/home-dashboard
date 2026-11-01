@@ -6,7 +6,8 @@
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import X from '@lucide/svelte/icons/x';
   import { onMount } from 'svelte';
-  import type { WidgetId } from '../lib/types';
+  import type { WidgetId, YouTubeChannel } from '../lib/types';
+  import { CLOCK_STYLES } from '../lib/clockStyles';
   import { WIDGETS } from '../lib/widgets';
   import { admin, api, AuthError, discard, load, save, toast } from './admin.svelte';
   import ColorPicker from './ColorPicker.svelte';
@@ -58,6 +59,29 @@
   const radarRadius = $derived(s ? Math.round(imperial ? s.radar.radiusKm / KM_PER_MI : s.radar.radiusKm) : 0);
   function setRadarRadius(value: number) {
     if (s) s.radar.radiusKm = Math.round(imperial ? value * KM_PER_MI : value);
+  }
+  const flightRadius = $derived(s ? Math.round(imperial ? s.flights.radiusKm / KM_PER_MI : s.flights.radiusKm) : 0);
+  function setFlightRadius(value: number) {
+    if (s) s.flights.radiusKm = Math.round(imperial ? value * KM_PER_MI : value);
+  }
+
+  // ---- YouTube: look a channel up by handle, link or id before adding it.
+  let channelQuery = $state('');
+  let addingChannel = $state(false);
+  async function addChannel(e: SubmitEvent) {
+    e.preventDefault();
+    if (!s || !channelQuery.trim()) return;
+    addingChannel = true;
+    try {
+      const channel = await api<YouTubeChannel>(`/api/admin/youtube/resolve?q=${encodeURIComponent(channelQuery.trim())}`);
+      if (s.youtube.channels.some((c) => c.id === channel.id)) toast(`${channel.name} is already on the list`);
+      else s.youtube.channels.push(channel);
+      channelQuery = '';
+    } catch {
+      toast("Couldn't find that channel");
+    } finally {
+      addingChannel = false;
+    }
   }
 
   async function signIn(e: SubmitEvent) {
@@ -389,7 +413,41 @@
       </div>
     </Section>
 
+    <Section title="Flights overhead" hint="Aircraft come from ADSB.lol's community receivers and routes from adsbdb. The card hides when nothing is in the air nearby.">
+      <div class="row">
+        <span>Show aircraft within</span>
+        <span class="controls">
+          <input type="range" min={imperial ? 2 : 3} max={imperial ? 100 : 160} step="1" value={flightRadius} oninput={(e) => setFlightRadius(Number(e.currentTarget.value))} />
+          <span class="num pct">{flightRadius} {imperial ? 'mi' : 'km'}</span>
+        </span>
+      </div>
+    </Section>
+
+    <Section title="Live on YouTube" hint="Checked every few minutes. Only channels that are streaming right now are shown, and the card hides when none are.">
+      {#each s.youtube.channels as c, i (c.id)}
+        <div class="row channel">
+          {#if c.avatar}<img class="avatar" src={c.avatar} alt="" />{/if}
+          <span class="grow">{c.name}{#if c.handle}<span class="muted handle">{c.handle}</span>{/if}</span>
+          <button class="icon-btn" onclick={() => s.youtube.channels.splice(i, 1)} title="Remove"><X size="1rem" /></button>
+        </div>
+      {/each}
+      <form class="row" onsubmit={addChannel}>
+        <input class="grow text" bind:value={channelQuery} placeholder="@handle, channel link or channel ID" />
+        <button class="btn" type="submit" disabled={addingChannel || !channelQuery.trim()}>{addingChannel ? 'Finding…' : 'Add'}</button>
+      </form>
+    </Section>
+
     <Section title="Display" hint="Text size applies to every screen; add ?scale=0.7 to one screen's address to size it on its own. Low-power mode drops the glass blur and photo zoom for slow TV sticks. Burn-in protection shifts the layout a few pixels every few minutes.">
+      <div class="row">
+        <span>Clock style</span>
+        <select bind:value={s.display.clockStyle}>
+          {#each CLOCK_STYLES as c (c.id)}<option value={c.id}>{c.label}</option>{/each}
+        </select>
+      </div>
+      <div class="row preview cs-{s.display.clockStyle}">
+        <span class="preview-time">9:41</span>
+        <span class="preview-date">Sunday, November 1</span>
+      </div>
       <div class="row">
         <span>Text &amp; card size</span>
         <span class="controls">
@@ -472,6 +530,41 @@
 {#if admin.toast}<div class="toast">{admin.toast}</div>{/if}
 
 <style>
+  .row.preview {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1.4rem 1rem;
+    font-family: var(--hero-font);
+  }
+  .preview-time {
+    font-family: var(--clock-font);
+    font-size: calc(var(--clock-size) * 0.45);
+    font-weight: var(--clock-weight);
+    letter-spacing: var(--clock-spacing);
+    line-height: 0.95;
+    color: var(--clock-fill);
+    -webkit-text-stroke: var(--clock-stroke) var(--text);
+  }
+  .preview-date {
+    font-size: calc(var(--date-size) * 0.55);
+    font-weight: var(--date-weight);
+    font-style: var(--date-style);
+    text-transform: var(--date-case);
+    letter-spacing: var(--date-spacing);
+  }
+  .row.channel {
+    justify-content: flex-start;
+    gap: 0.7rem;
+  }
+  .handle {
+    margin-left: 0.5rem;
+  }
+  .avatar {
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+  }
   .row.code-row {
     flex-direction: column;
     align-items: stretch;

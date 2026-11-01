@@ -9,12 +9,14 @@ import { checkPin, cookieSecret, isAuthed, pinRequired, requireAuth, signOut } f
 import { config } from './config.js';
 import { attachClient, publish, snapshot } from './hub.js';
 import { calendarStatus, startCalendar } from './integrations/calendar.js';
+import { startFlights } from './integrations/flights.js';
 import { startNews } from './integrations/news.js';
 import { startRadar } from './integrations/radar.js';
 import { LEAGUES, listTeams, startSports } from './integrations/sports.js';
 import { authorizeUrl, disconnect, handleCallback, spotifyConfigured, spotifyConnected, startSpotify } from './integrations/spotify.js';
 import { startTodoist } from './integrations/todoist.js';
 import { wallpaperDir, startWallpaper } from './integrations/wallpaper.js';
+import { resolveChannel, startYouTube } from './integrations/youtube.js';
 import { startWeather } from './integrations/weather.js';
 import { errorMessage, log } from './log.js';
 import { getMode, loadMode, MODES, setMode, type Mode } from './mode.js';
@@ -107,6 +109,13 @@ app.register(async (admin) => {
       latitude: r.latitude,
       longitude: r.longitude,
     }));
+  });
+  admin.get<{ Querystring: { q?: string } }>('/api/admin/youtube/resolve', async (req, reply) => {
+    try {
+      return await resolveChannel(req.query.q ?? '');
+    } catch (err) {
+      return reply.code(404).send({ error: errorMessage(err) });
+    }
   });
   admin.get<{ Querystring: { league?: string } }>('/api/admin/teams', async (req) => listTeams(req.query.league ?? ''));
   admin.post('/api/admin/wallpaper/next', async () => {
@@ -201,6 +210,8 @@ const pollers = {
   news: startNews(),
   sports: startSports(),
   radar: startRadar(),
+  flights: startFlights(),
+  youtube: startYouTube(),
 };
 
 await app.listen({ port: config.port, host: config.host });

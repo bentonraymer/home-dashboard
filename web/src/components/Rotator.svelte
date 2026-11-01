@@ -8,7 +8,7 @@
   /** `phase` (seconds) staggers slots so they don't all flip at the same moment. */
   let { views, phase = 0 }: { views: WidgetId[]; phase?: number } = $props();
 
-  const ready = $derived(views.filter((id) => WIDGETS[id].ready(dash)));
+  const ready = $derived(views.filter((id) => WIDGETS[id]?.ready(dash)));
   const intervalSec = $derived(dash.settings?.layout.rotatorIntervalSec ?? 20);
   // Derived from wall-clock time so every screen shows the same view at once.
   const index = $derived(ready.length ? Math.floor((clock.now / 1000 + phase) / intervalSec) % ready.length : 0);
@@ -16,7 +16,7 @@
 </script>
 
 {#if current}
-  <div class="stack">
+  <div class="stack" class:rigid={!WIDGETS[current].shrinks}>
     {#key current}
       {@const w = WIDGETS[current]}
       <div class="slot" transition:fade={{ duration: ready.length > 1 ? 800 : 0 }}>

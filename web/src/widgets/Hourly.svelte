@@ -4,7 +4,7 @@
   import { deg, formatHour } from '../lib/format';
 
   const use24h = $derived(dash.settings?.clock.use24h ?? false);
-  const hours = $derived((dash.weather?.hourly ?? []).slice(0, 9));
+  const hours = $derived((dash.weather?.hourly ?? []).slice(0, 12));
 </script>
 
 <div class="row">
@@ -19,10 +19,15 @@
 </div>
 
 <style>
+  /* As many hours as fit the card's width: extra ones wrap onto zero-height rows and are clipped. */
   .row {
     display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    gap: 0.3rem;
+    grid-template-columns: repeat(auto-fill, minmax(3.4rem, 1fr));
+    grid-auto-rows: 0;
+    grid-template-rows: auto;
+    column-gap: 0.3rem;
+    row-gap: 0;
+    overflow: hidden;
   }
   .hour {
     display: flex;

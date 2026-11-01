@@ -12,6 +12,8 @@ export const dash: DashboardState = $state({
   sports: null,
   wallpaper: null,
   radar: null,
+  flights: null,
+  youtube: null,
   mode: 'day',
 });
 

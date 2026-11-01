@@ -1,4 +1,5 @@
-export type WidgetId = 'calendar' | 'todos' | 'hourly' | 'daily' | 'air' | 'countdowns' | 'sports' | 'radar';
+export type WidgetId = 'calendar' | 'todos' | 'hourly' | 'daily' | 'air' | 'countdowns' | 'sports' | 'radar' | 'flights' | 'youtube';
+export type ClockStyle = 'classic' | 'rounded' | 'serif' | 'mono' | 'condensed' | 'outline';
 
 export interface Settings {
   location: { name: string; latitude: number | null; longitude: number | null };
@@ -12,8 +13,11 @@ export interface Settings {
   sports: { teams: { league: string; id: string; name: string; abbr: string; logo: string }[] };
   countdowns: { id: string; name: string; date: string; yearly: boolean; emoji: string }[];
   radar: { radiusKm: number };
+  flights: { radiusKm: number };
+  youtube: { channels: YouTubeChannel[] };
   night: { brightness: number; showWeather: boolean; showNextEvent: boolean };
   display: {
+    clockStyle: ClockStyle;
     scale: number;
     lowPower: boolean;
     burnInShift: boolean;
@@ -108,6 +112,36 @@ export interface Radar {
   frames?: { time: number; path: string }[];
 }
 
+export interface YouTubeChannel {
+  id: string;
+  name: string;
+  handle: string;
+  avatar: string;
+}
+
+export interface LiveStream {
+  channelId: string;
+  channel: string;
+  avatar: string;
+  videoId: string;
+  title: string;
+  viewers: number | null;
+}
+
+export interface Flight {
+  hex: string;
+  callsign: string;
+  registration: string;
+  type: string;
+  lat: number;
+  lon: number;
+  altitudeFt: number;
+  speedKt: number;
+  track: number;
+  distanceKm: number;
+  route: { airline: string; from: string; to: string } | null;
+}
+
 export interface DashboardState {
   connected: boolean;
   version: string | null;
@@ -120,6 +154,8 @@ export interface DashboardState {
   sports: { teams: TeamSummary[] } | null;
   wallpaper: Wallpaper | null;
   radar: Radar | null;
+  flights: { configured: boolean; radiusKm?: number; aircraft: Flight[] } | null;
+  youtube: { live: LiveStream[] } | null;
   mode: 'day' | 'night';
 }
 

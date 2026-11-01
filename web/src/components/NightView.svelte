@@ -32,7 +32,7 @@
   });
 </script>
 
-<div class="night" style:--level={s?.night.brightness ?? 0.45} transition:fade={{ duration: 1200 }}>
+<div class="night cs-{s?.display.clockStyle ?? 'classic'}" style:--level={s?.night.brightness ?? 0.45} transition:fade={{ duration: 1200 }}>
   <div class="content" style:transform={shift}>
     <div class="time num">
       {time.main}{#if !use24h}<span class="period">{time.period}</span>{/if}
@@ -61,6 +61,7 @@
     place-items: center;
     /* One dim, warm-neutral grey for everything; brightness scales it. */
     color: rgb(190 184 176 / calc(var(--level) * 0.8));
+    font-family: var(--hero-font);
     cursor: none;
   }
   .content {
@@ -68,10 +69,18 @@
     transition: transform 4s var(--ease);
   }
   .time {
-    font-size: 13rem;
-    font-weight: 200;
+    font-family: var(--clock-font);
+    font-size: calc(var(--clock-size) * 1.35);
+    font-weight: var(--clock-weight);
+    font-style: var(--clock-style);
     line-height: 0.9;
-    letter-spacing: -0.03em;
+    letter-spacing: var(--clock-spacing);
+    color: var(--clock-fill);
+    -webkit-text-stroke: var(--clock-stroke) rgb(190 184 176 / calc(var(--level) * 0.8));
+  }
+  .period {
+    -webkit-text-stroke: 0;
+    color: rgb(190 184 176 / calc(var(--level) * 0.8));
   }
   .period {
     font-size: 0.22em;
@@ -81,8 +90,11 @@
   }
   .date {
     margin-top: 1.4rem;
-    font-size: 1.9rem;
+    font-size: calc(var(--date-size) * 0.95);
     font-weight: 400;
+    font-style: var(--date-style);
+    text-transform: var(--date-case);
+    letter-spacing: var(--date-spacing);
   }
   .meta {
     display: flex;
