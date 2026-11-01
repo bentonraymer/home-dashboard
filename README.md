@@ -7,10 +7,12 @@ An ambient, Apple TV–style dashboard for a TV, wall tablet or spare monitor. F
 - **To-dos**: Todoist, using any Todoist filter
 - **Now Playing**: your Spotify track with album art; hidden when nothing is playing
 - **Headlines**: a slow crossfading ticker from any RSS feeds
+- **Radar**: an animated precipitation map that only appears when rain or snow is nearby ([RainViewer](https://www.rainviewer.com), no key needed)
+- **Night mode**: a black screen with a dim clock for dark rooms, switched by Home Assistant (or anything else) over a simple HTTP call
 - **Sports**: live scores, last result and next game for your teams (NFL, NBA, MLB, NHL, MLS, Premier League, college and more)
 - **Countdowns**: trips, birthdays, holidays (yearly ones roll over)
 - **Wallpapers**: a new Unsplash photo every few minutes, with built-in photos as a fallback; text contrast adjusts to each photo
-- **Your layout**: put any card in the left or right column, and group several cards into one slot to have them take turns
+- **Your layout**: the clock sits top-center; put any card in the left or right column, and group several cards into one slot to have them take turns
 - **TV-friendly**: one lightweight page, live updates over a single connection, a low-power mode for slow TV sticks, night dimming and burn-in protection
 
 Layout and preferences are set from a PIN-protected `/settings` page. API keys stay in `.env` on the server and never reach the browser.
@@ -75,6 +77,38 @@ Create an app at [unsplash.com/oauth/applications](https://unsplash.com/oauth/ap
 
 If you run the dashboard behind an HTTPS reverse proxy, you can set `SPOTIFY_REDIRECT_URI=https://dash.example.com/auth/spotify/callback` instead and skip step 5.
 
+## Night mode & Home Assistant
+
+Night mode swaps the whole screen for black with a dim clock, date, temperature and your next event. Brightness and what's shown are under **Night mode** in settings, which also has a Day/Night switch for trying it out.
+
+The mode is shared by every screen and survives restarts. Change it with an unauthenticated `POST` (keep the dashboard on your local network):
+
+| Request | Effect |
+| --- | --- |
+| `POST /api/mode/night` | Night mode |
+| `POST /api/mode/day` | Normal view |
+| `POST /api/mode/toggle` | Switch to the other one |
+| `POST /api/mode` with `{"mode": "night"}` | Same, as JSON |
+| `GET /api/mode` | `{"mode": "day"}` |
+
+In Home Assistant, add to `configuration.yaml`:
+
+```yaml
+rest_command:
+  dashboard_night:
+    url: http://<server-ip>:8080/api/mode/night
+    method: post
+  dashboard_day:
+    url: http://<server-ip>:8080/api/mode/day
+    method: post
+```
+
+Then call `rest_command.dashboard_night` from an automation, for example when the living room lights turn off.
+
+## Radar
+
+Add the **Radar** card to a slot under **Layout**. It stays hidden until rain or snow shows up within the distance set under **Radar** in settings (50 mi by default), then shows the last 1.5 hours of radar around you. Put it in a slot with other cards and it simply joins the rotation while there's something to see.
+
 ## Display tips
 
 - **Fire TV / Android TV**: use a kiosk browser (e.g. Fully Kiosk Browser) or Silk, and turn on **Low-power mode** in settings if animations stutter.
@@ -101,4 +135,4 @@ Pushing to `main` builds a multi-arch (amd64 + arm64) image and publishes it to 
 
 ## Credits
 
-Weather from [Open-Meteo](https://open-meteo.com). Scores from ESPN's public site API. Photos from [Unsplash](https://unsplash.com); the built-in fallback photos are Unsplash images selected through [Lorem Picsum](https://picsum.photos), credited on screen. Icons from [Lucide](https://lucide.dev).
+Weather from [Open-Meteo](https://open-meteo.com). Radar from [RainViewer](https://www.rainviewer.com) over an [Esri](https://www.esri.com) dark basemap. Scores from ESPN's public site API. Photos from [Unsplash](https://unsplash.com); the built-in fallback photos are Unsplash images selected through [Lorem Picsum](https://picsum.photos), credited on screen. Icons from [Lucide](https://lucide.dev).

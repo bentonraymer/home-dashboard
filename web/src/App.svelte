@@ -1,7 +1,9 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { fade } from 'svelte/transition';
   import WifiOff from '@lucide/svelte/icons/wifi-off';
-    import Hero from './components/Hero.svelte';
+  import Hero from './components/Hero.svelte';
+  import NightView from './components/NightView.svelte';
   import NewsTicker from './components/NewsTicker.svelte';
   import NowPlaying from './components/NowPlaying.svelte';
   import Rotator from './components/Rotator.svelte';
@@ -12,6 +14,7 @@
   const s = $derived(dash.settings);
   const left: WidgetId[][] = $derived(s?.layout.left ?? []);
   const right: WidgetId[][] = $derived(s?.layout.right ?? [['calendar'], ['todos']]);
+  const night = $derived(dash.mode === 'night');
   // Offset each rotating slot by a few seconds so they take turns changing.
   const phase = (column: 'left' | 'right', i: number) => (column === 'left' ? i : left.length + i) * 5;
 
@@ -55,41 +58,45 @@
   const offline = $derived(offlineSince !== null && clock.now - offlineSince > 15_000);
 </script>
 
-<div class="stage" class:low-power={s?.display.lowPower}>
-  <Wallpaper />
-  <div class="scrim" aria-hidden="true"></div>
+{#if night}
+  <NightView />
+{:else}
+  <div class="stage" class:low-power={s?.display.lowPower} transition:fade={{ duration: 1200 }}>
+    <Wallpaper />
+    <div class="scrim" aria-hidden="true"></div>
 
-  <main class="layout" class:no-right={!right.length} style:transform={shift}>
-    <section class="hero-area"><Hero /></section>
+    <main class="layout" class:no-columns={!left.length && !right.length} style:transform={shift}>
+      <section class="hero-area"><Hero /></section>
 
-    <section class="lower">
-      {#if s?.layout.showNowPlaying ?? true}<NowPlaying />{/if}
-      {#each left as group, i (group.join())}
-        <div class="slot-wrap"><Rotator views={group} phase={phase('left', i)} /></div>
+      {#each [{ key: 'left', slots: left }, { key: 'right', slots: right }] as const as col (col.key)}
+        {#if col.slots.length}
+          <section class="column {col.key}">
+            {#each col.slots as group, i (group.join())}
+              <div class="slot-wrap"><Rotator views={group} phase={phase(col.key, i)} /></div>
+            {/each}
+          </section>
+        {/if}
       {/each}
-    </section>
 
-    {#if right.length}
-      <section class="column">
-        {#each right as group, i (group.join())}
-          <div class="slot-wrap"><Rotator views={group} phase={phase('right', i)} /></div>
-        {/each}
+      <section class="center">
+        {#if s?.layout.showNowPlaying ?? true}<NowPlaying />{/if}
       </section>
-    {/if}
 
-    <footer class="footer">
-      {#if s?.layout.showNews ?? true}<NewsTicker />{:else}<span class="spacer"></span>{/if}
-      {#if dash.wallpaper?.author}
-        <span class="credit">Photo by {dash.wallpaper.author} on Unsplash</span>
-      {/if}
-    </footer>
-  </main>
+      <footer class="footer">
+        {#if s?.layout.showNews ?? true}<NewsTicker />{:else}<span class="spacer"></span>{/if}
+        {#if dash.wallpaper?.author}
+          <span class="credit">Photo by {dash.wallpaper.author} on Unsplash</span>
+        {/if}
+      </footer>
+    </main>
 
-  {#if offline}
-    <div class="offline glass"><WifiOff size="1.1rem" /> Reconnecting…</div>
-  {/if}
-  <div class="dim" style:opacity={dim} aria-hidden="true"></div>
-</div>
+    <div class="dim" style:opacity={dim} aria-hidden="true"></div>
+  </div>
+{/if}
+
+{#if offline}
+  <div class="offline glass" class:night><WifiOff size="1.1rem" /> Reconnecting…</div>
+{/if}
 
 <style>
   :global(html.dashboard) {
@@ -135,8 +142,8 @@
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(70% 65% at 0% 0%, rgba(0, 0, 0, calc(var(--scrim-hero, 0.25) + 0.1)), transparent 75%),
-      radial-gradient(70% 60% at 0% 100%, rgba(0, 0, 0, var(--scrim-lower, 0.2)), transparent 75%),
+      radial-gradient(45% 55% at 50% 0%, rgba(0, 0, 0, calc(var(--scrim-hero, 0.25) + 0.1)), transparent 75%),
+      radial-gradient(40% 35% at 50% 100%, rgba(0, 0, 0, var(--scrim-lower, 0.2)), transparent 75%),
       linear-gradient(to top, rgba(0, 0, 0, calc(var(--scrim-bottom, 0.2) + 0.25)), transparent 14%),
       radial-gradient(140% 140% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.35));
     transition: background 2.5s;
@@ -145,25 +152,33 @@
     position: fixed;
     inset: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 31rem;
+    /* Equal side columns keep the clock centred on screen even when one of them is empty. */
+    grid-template-columns: 31rem minmax(0, 1fr) 31rem;
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'hero column'
-      'lower column'
-      'footer footer';
-    gap: 1.6rem 3rem;
+      'left hero right'
+      'left center right'
+      'footer footer footer';
+    gap: 1.6rem 0;
     padding: 3rem 3.4rem 1.8rem;
     transition: transform 3s var(--ease);
   }
+  .layout.no-columns {
+    grid-template-columns: 0 minmax(0, 1fr) 0;
+  }
   .hero-area {
     grid-area: hero;
+    padding: 0 2.5rem;
   }
   .column {
-    grid-area: column;
+    grid-area: left;
     display: flex;
     flex-direction: column;
     gap: 1.3rem;
     min-height: 0;
+  }
+  .column.right {
+    grid-area: right;
   }
   .slot-wrap {
     display: flex;
@@ -171,19 +186,14 @@
     min-height: 0;
     flex: 0 1 auto;
   }
-  .layout.no-right {
-    grid-template-columns: minmax(0, 1fr) 0;
-    column-gap: 0;
-  }
-  .lower {
-    grid-area: lower;
-    align-self: end;
+  .center {
+    grid-area: center;
     display: flex;
     flex-direction: column;
-    gap: 1.3rem;
-    max-width: 40rem;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 2.5rem;
     min-height: 0;
-    max-height: 100%;
   }
   .footer {
     grid-area: footer;
@@ -212,6 +222,10 @@
     border-radius: 2rem;
     font-size: 0.95rem;
     color: var(--text-2);
+    z-index: 20;
+  }
+  .offline.night {
+    opacity: 0.35;
   }
   .dim {
     position: fixed;
@@ -222,15 +236,16 @@
   }
 
   @media (orientation: portrait) {
-    .layout {
+    .layout,
+    .layout.no-columns {
       grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
-      grid-template-areas: 'hero' 'lower' 'column' 'footer';
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      grid-template-areas: 'hero' 'center' 'left' 'right' 'footer';
       padding: 2.4rem 2rem 1.6rem;
     }
-    .lower {
-      max-width: none;
-      align-self: start;
+    .hero-area,
+    .center {
+      padding: 0;
     }
     .column {
       flex-direction: row;

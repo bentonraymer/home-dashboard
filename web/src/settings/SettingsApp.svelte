@@ -21,6 +21,7 @@
   let pin = $state('');
   let pinError = $state('');
   let wallpaperUrl = $state('');
+  let mode = $state<'day' | 'night'>('day');
 
   onMount(async () => {
     const params = new URLSearchParams(location.search);
@@ -31,9 +32,33 @@
     if (spotify === 'error') toast('Spotify sign-in failed. Check the redirect URI in your Spotify app.');
     fetch('/api/state')
       .then((r) => r.json())
-      .then((st) => (wallpaperUrl = st.wallpaper?.url ?? ''))
+      .then((st) => {
+        wallpaperUrl = st.wallpaper?.url ?? '';
+        mode = st.mode ?? 'day';
+      })
       .catch(() => {});
   });
+
+  // ---- Night mode: switched instantly through the same open endpoint Home Assistant uses.
+  async function setMode(next: 'day' | 'night') {
+    const res = await api<{ mode: 'day' | 'night' }>('/api/mode', { method: 'POST', body: { mode: next } });
+    mode = res.mode;
+  }
+  const haExample = $derived(`rest_command:
+  dashboard_night:
+    url: ${location.origin}/api/mode/night
+    method: post
+  dashboard_day:
+    url: ${location.origin}/api/mode/day
+    method: post`);
+
+  // ---- Radar distance, shown in the user's units but stored in km.
+  const KM_PER_MI = 1.609;
+  const imperial = $derived(s?.units !== 'metric');
+  const radarRadius = $derived(s ? Math.round(imperial ? s.radar.radiusKm / KM_PER_MI : s.radar.radiusKm) : 0);
+  function setRadarRadius(value: number) {
+    if (s) s.radar.radiusKm = Math.round(imperial ? value * KM_PER_MI : value);
+  }
 
   async function signIn(e: SubmitEvent) {
     e.preventDefault();
@@ -71,7 +96,7 @@
   type Column = 'left' | 'right';
   const ALL = Object.keys(WIDGETS) as WidgetId[];
   const COLUMNS: { key: Column; label: string; hint: string }[] = [
-    { key: 'left', label: 'Left column', hint: 'Under the clock, above the headlines' },
+    { key: 'left', label: 'Left column', hint: 'Stacked from the top' },
     { key: 'right', label: 'Right column', hint: 'Stacked from the top' },
   ];
   const unused = $derived(s ? ALL.filter((id) => !s.layout.left.flat().includes(id) && !s.layout.right.flat().includes(id)) : []);
@@ -354,6 +379,16 @@
       <div class="row"><button class="btn ghost" onclick={addCountdown}><Plus size="1rem" /> Add countdown</button></div>
     </Section>
 
+    <Section title="Radar" hint="The radar card stays hidden until rain or snow shows up within this distance of your location. Add it to a slot in Layout.">
+      <div class="row">
+        <span>Show when precipitation is within</span>
+        <span class="controls">
+          <input type="range" min={imperial ? 10 : 15} max={imperial ? 250 : 400} step="5" value={radarRadius} oninput={(e) => setRadarRadius(Number(e.currentTarget.value))} />
+          <span class="num pct">{radarRadius} {imperial ? 'mi' : 'km'}</span>
+        </span>
+      </div>
+    </Section>
+
     <Section title="Display" hint="Text size applies to every screen; add ?scale=0.7 to one screen's address to size it on its own. Low-power mode drops the glass blur and photo zoom for slow TV sticks. Burn-in protection shifts the layout a few pixels every few minutes.">
       <div class="row">
         <span>Text &amp; card size</span>
@@ -376,6 +411,26 @@
           <input type="range" min="0.1" max="0.9" step="0.05" bind:value={s.display.nightDim.level} />
         </div>
       {/if}
+    </Section>
+
+    <Section title="Night mode" hint="A black screen with a dim clock for when the room is dark. Switch it from Home Assistant (or anything on your network) with a POST to /api/mode/night and /api/mode/day; no PIN needed. The switch below takes effect right away, without saving.">
+      <div class="row">
+        <span>Screens are showing</span>
+        <Segmented value={mode} onchange={setMode} options={[{ value: 'day', label: 'Day' }, { value: 'night', label: 'Night' }]} />
+      </div>
+      <div class="row">
+        <span>Brightness</span>
+        <span class="controls">
+          <input type="range" min="0.1" max="1" step="0.05" bind:value={s.night.brightness} />
+          <span class="num pct">{Math.round(s.night.brightness * 100)}%</span>
+        </span>
+      </div>
+      <Toggle label="Show weather" bind:checked={s.night.showWeather} />
+      <Toggle label="Show next event" bind:checked={s.night.showNextEvent} />
+      <div class="row code-row">
+        <span>Home Assistant <code>configuration.yaml</code></span>
+        <pre class="code">{haExample}</pre>
+      </div>
     </Section>
 
     <Section
@@ -417,6 +472,21 @@
 {#if admin.toast}<div class="toast">{admin.toast}</div>{/if}
 
 <style>
+  .row.code-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+  .code {
+    margin: 0;
+    padding: 0.8rem 1rem;
+    border-radius: 0.6rem;
+    background: rgba(0, 0, 0, 0.35);
+    font: 0.85rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--text-2);
+    overflow-x: auto;
+    user-select: all;
+  }
   :global(body) {
     font-size: 16px;
     background: #000;

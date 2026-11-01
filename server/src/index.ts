@@ -10,21 +10,34 @@ import { config } from './config.js';
 import { attachClient, publish, snapshot } from './hub.js';
 import { calendarStatus, startCalendar } from './integrations/calendar.js';
 import { startNews } from './integrations/news.js';
+import { startRadar } from './integrations/radar.js';
 import { LEAGUES, listTeams, startSports } from './integrations/sports.js';
 import { authorizeUrl, disconnect, handleCallback, spotifyConfigured, spotifyConnected, startSpotify } from './integrations/spotify.js';
 import { startTodoist } from './integrations/todoist.js';
 import { wallpaperDir, startWallpaper } from './integrations/wallpaper.js';
 import { startWeather } from './integrations/weather.js';
 import { errorMessage, log } from './log.js';
+import { getMode, loadMode, MODES, setMode, type Mode } from './mode.js';
 import { fetchJson } from './poller.js';
 import { DEFAULT_FEEDS, getSettings, loadSettings, saveSettings } from './settings.js';
 
 fs.mkdirSync(config.dataDir, { recursive: true });
 loadSettings();
 loadCalendars();
+loadMode();
 
 const app = Fastify({ logger: false, trustProxy: true });
 await app.register(fastifyCookie, { secret: cookieSecret() });
+// Accept an empty JSON body, which automation tools often send with a bare POST.
+app.removeContentTypeParser('application/json');
+app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+  if (!String(body).trim()) return done(null, undefined);
+  try {
+    done(null, JSON.parse(String(body)));
+  } catch {
+    done(Object.assign(new Error('Invalid JSON body'), { statusCode: 400 }), undefined);
+  }
+});
 
 // ---- Display ------------------------------------------------------------
 
@@ -34,6 +47,18 @@ app.get('/api/stream', (req, reply) => {
   reply.hijack();
   attachClient(reply.raw);
 });
+
+// ---- Day / night mode -------------------------------------------------
+// Deliberately unauthenticated so Home Assistant (or anything on the LAN) can flip it.
+
+app.get('/api/mode', async () => ({ mode: getMode() }));
+app.post<{ Body: { mode?: string } | undefined; Querystring: { mode?: string } }>('/api/mode', async (req, reply) => {
+  const mode = (req.body?.mode ?? req.query.mode) as Mode;
+  if (!MODES.includes(mode)) return reply.code(400).send({ error: `mode must be one of: ${MODES.join(', ')}` });
+  return { mode: setMode(mode) };
+});
+app.post('/api/mode/toggle', async () => ({ mode: setMode(getMode() === 'night' ? 'day' : 'night') }));
+for (const mode of MODES) app.post(`/api/mode/${mode}`, async () => ({ mode: setMode(mode) }));
 
 // ---- Settings auth ------------------------------------------------------
 
@@ -175,6 +200,7 @@ const pollers = {
   spotify: startSpotify(),
   news: startNews(),
   sports: startSports(),
+  radar: startRadar(),
 };
 
 await app.listen({ port: config.port, host: config.host });

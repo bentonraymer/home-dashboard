@@ -40,8 +40,8 @@
       };
       const root = document.documentElement.style;
       const strength = (lum: number) => (0.12 + Math.max(0, lum - 0.25) * 0.85).toFixed(3);
-      root.setProperty('--scrim-hero', strength(region(0, 0, 0.6, 0.55)));
-      root.setProperty('--scrim-lower', strength(region(0, 0.5, 0.6, 1)));
+      root.setProperty('--scrim-hero', strength(region(0.25, 0, 0.75, 0.5)));
+      root.setProperty('--scrim-lower', strength(region(0.25, 0.6, 0.75, 1)));
       root.setProperty('--scrim-bottom', strength(region(0, 0.85, 1, 1)));
     } catch {
       // Cross-origin or decode failure: keep the default scrims.

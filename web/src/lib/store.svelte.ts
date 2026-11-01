@@ -11,6 +11,8 @@ export const dash: DashboardState = $state({
   news: null,
   sports: null,
   wallpaper: null,
+  radar: null,
+  mode: 'day',
 });
 
 /** Ticks once a second; anything time-based derives from `clock.now`. */

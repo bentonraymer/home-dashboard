@@ -4,7 +4,7 @@ import path from 'node:path';
 import { config } from './config.js';
 import { errorMessage, log } from './log.js';
 
-export const WIDGETS = ['calendar', 'todos', 'hourly', 'daily', 'air', 'countdowns', 'sports'] as const;
+export const WIDGETS = ['calendar', 'todos', 'hourly', 'daily', 'air', 'countdowns', 'sports', 'radar'] as const;
 export type WidgetId = (typeof WIDGETS)[number];
 
 export interface SportsTeam {
@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS = {
   clock: { use24h: false, showSeconds: false },
   layout: {
     // Each column is a list of slots; a slot with several cards rotates between them.
-    left: [['hourly', 'daily', 'air', 'countdowns', 'sports']] as WidgetId[][],
+    left: [['radar'], ['hourly', 'daily', 'air', 'countdowns', 'sports']] as WidgetId[][],
     right: [['calendar'], ['todos']] as WidgetId[][],
     rotatorIntervalSec: 20,
     showNowPlaying: true,
@@ -56,6 +56,10 @@ export const DEFAULT_SETTINGS = {
   news: { feeds: DEFAULT_FEEDS, intervalSec: 12 },
   sports: { teams: [] as SportsTeam[] },
   countdowns: [] as Countdown[],
+  // The radar card only appears when there's precipitation within this distance.
+  radar: { radiusKm: 80 },
+  // The dark view Home Assistant switches to with POST /api/mode.
+  night: { brightness: 0.45, showWeather: true, showNextEvent: true },
   display: {
     scale: 0.85,
     lowPower: false,
@@ -114,6 +118,8 @@ function normalize(s: Settings): Settings {
   s.news.feeds = s.news.feeds.filter((f) => f && typeof f.url === 'string' && /^https?:\/\//.test(f.url));
   s.display.nightDim.level = clamp(s.display.nightDim.level, 0, 0.95);
   s.display.scale = clamp(s.display.scale, 0.4, 1.6);
+  s.radar.radiusKm = clamp(Math.round(s.radar.radiusKm), 10, 400);
+  s.night.brightness = clamp(s.night.brightness, 0.1, 1);
   s.countdowns = s.countdowns.filter((c) => c && typeof c.name === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.date));
   s.sports.teams = s.sports.teams.filter((t) => t && typeof t.league === 'string' && typeof t.id === 'string');
   return s;
@@ -125,6 +131,10 @@ function migrate(raw: Record<string, any>) {
   if (layout && !layout.left && !layout.right && (layout.column || layout.rotator)) {
     layout.right = (layout.column ?? []).map((id: string) => [id]);
     layout.left = layout.rotator?.length ? [layout.rotator] : [];
+  }
+  // Settings from before the radar card existed: give it a slot of its own at the top left.
+  if (layout && !raw.radar && Array.isArray(layout.left) && !JSON.stringify(layout).includes('"radar"')) {
+    layout.left.unshift(['radar']);
   }
   return raw;
 }

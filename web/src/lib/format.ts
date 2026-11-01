@@ -50,3 +50,14 @@ export function relativeTime(t: number, now: number): string {
 }
 
 export const deg = (n: number | undefined | null) => (n === undefined || n === null ? '--' : `${Math.round(n)}°`);
+
+/** The big clock's pieces: "9:41", seconds and AM/PM. */
+export function clockParts(t: number, use24h: boolean) {
+  const d = new Date(t);
+  const h = use24h ? String(d.getHours()).padStart(2, '0') : String(d.getHours() % 12 || 12);
+  return {
+    main: `${h}:${String(d.getMinutes()).padStart(2, '0')}`,
+    seconds: String(d.getSeconds()).padStart(2, '0'),
+    period: d.getHours() < 12 ? 'AM' : 'PM',
+  };
+}

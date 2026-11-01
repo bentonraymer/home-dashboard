@@ -1,17 +1,12 @@
 <script lang="ts">
   import { clock, dash } from '../lib/store.svelte';
-  import { deg } from '../lib/format';
+  import { clockParts, deg } from '../lib/format';
   import { condition } from '../lib/weather';
   import WeatherIcon from './WeatherIcon.svelte';
 
   const use24h = $derived(dash.settings?.clock.use24h ?? false);
   const showSeconds = $derived(dash.settings?.clock.showSeconds ?? false);
-  const time = $derived.by(() => {
-    const d = new Date(clock.now);
-    const h = use24h ? String(d.getHours()).padStart(2, '0') : String(d.getHours() % 12 || 12);
-    const m = String(d.getMinutes()).padStart(2, '0');
-    return { main: `${h}:${m}`, seconds: String(d.getSeconds()).padStart(2, '0'), period: d.getHours() < 12 ? 'AM' : 'PM' };
-  });
+  const time = $derived(clockParts(clock.now, use24h));
   const date = $derived(new Date(clock.now).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }));
   const w = $derived(dash.weather?.configured ? dash.weather : null);
   const today = $derived(w?.daily?.[0]);
@@ -41,6 +36,7 @@
 
 <style>
   .hero {
+    text-align: center;
     text-shadow: 0 0.1rem 1.2rem rgba(0, 0, 0, 0.35);
   }
   .time {
@@ -48,7 +44,6 @@
     font-weight: 200;
     line-height: 0.9;
     letter-spacing: -0.03em;
-    margin-left: -0.06em;
   }
   .sec {
     font-size: 0.32em;
@@ -72,6 +67,7 @@
   }
   .weather {
     display: flex;
+    justify-content: center;
     align-items: center;
     gap: 1rem;
     margin-top: 1.6rem;
@@ -87,6 +83,7 @@
   }
   .meta {
     margin-left: 0.4rem;
+    text-align: left;
   }
   .cond {
     font-size: 1.45rem;

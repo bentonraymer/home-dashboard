@@ -1,4 +1,4 @@
-export type WidgetId = 'calendar' | 'todos' | 'hourly' | 'daily' | 'air' | 'countdowns' | 'sports';
+export type WidgetId = 'calendar' | 'todos' | 'hourly' | 'daily' | 'air' | 'countdowns' | 'sports' | 'radar';
 
 export interface Settings {
   location: { name: string; latitude: number | null; longitude: number | null };
@@ -11,6 +11,8 @@ export interface Settings {
   news: { feeds: { name: string; url: string }[]; intervalSec: number };
   sports: { teams: { league: string; id: string; name: string; abbr: string; logo: string }[] };
   countdowns: { id: string; name: string; date: string; yearly: boolean; emoji: string }[];
+  radar: { radiusKm: number };
+  night: { brightness: number; showWeather: boolean; showNextEvent: boolean };
   display: {
     scale: number;
     lowPower: boolean;
@@ -96,6 +98,16 @@ export interface Wallpaper {
   source: 'unsplash' | 'fallback';
 }
 
+export interface Radar {
+  configured: boolean;
+  active: boolean;
+  coverage?: number;
+  nearestKm?: number | null;
+  radiusKm?: number;
+  host?: string;
+  frames?: { time: number; path: string }[];
+}
+
 export interface DashboardState {
   connected: boolean;
   version: string | null;
@@ -107,6 +119,8 @@ export interface DashboardState {
   news: { items: { title: string; source: string; published: number }[] } | null;
   sports: { teams: TeamSummary[] } | null;
   wallpaper: Wallpaper | null;
+  radar: Radar | null;
+  mode: 'day' | 'night';
 }
 
 export interface CalendarSource {

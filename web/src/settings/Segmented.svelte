@@ -1,10 +1,19 @@
 <script lang="ts" generics="T extends string">
-  let { value = $bindable(), options }: { value: T; options: { value: T; label: string }[] } = $props();
+  let {
+    value = $bindable(),
+    options,
+    onchange,
+  }: { value: T; options: { value: T; label: string }[]; onchange?: (value: T) => void } = $props();
+
+  function choose(next: T) {
+    value = next;
+    onchange?.(next);
+  }
 </script>
 
 <div class="seg" role="radiogroup">
   {#each options as o (o.value)}
-    <button type="button" role="radio" aria-checked={value === o.value} class:on={value === o.value} onclick={() => (value = o.value)}>
+    <button type="button" role="radio" aria-checked={value === o.value} class:on={value === o.value} onclick={() => choose(o.value)}>
       {o.label}
     </button>
   {/each}
